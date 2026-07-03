@@ -423,7 +423,7 @@ async function sync(args) {
 function ensureFresh(db, states) {
   if (!existsSync(MD_PATH)) {
     console.error(
-      `Error: ${MD_PATH} not found — the index has no source of truth to read from.`,
+      `错误：${MD_PATH} 未找到 — 索引没有数据源可读取。`,
     );
     process.exit(1);
   }
@@ -490,7 +490,7 @@ async function query(args) {
   const since = flagValue(args, "--since");
   if (since) {
     if (!DATE_RE.test(since)) {
-      console.error("Error: --since must be YYYY-MM-DD");
+      console.error("错误：--since 必须为 YYYY-MM-DD 格式");
       process.exit(1);
     }
     where.push("date >= ?");
@@ -519,7 +519,7 @@ async function query(args) {
     console.log(HEADER);
     console.log(SEPARATOR);
     for (const r of rows) console.log(rowToMarkdown(r));
-    console.error(`\n${rows.length} row(s)`); // stderr so stdout stays pipeable
+    console.error(`\n${rows.length} 条记录`); // stderr so stdout stays pipeable
   }
 }
 
@@ -529,12 +529,12 @@ async function history(args) {
   ensureFresh(db, loadStates());
   const id = parseInt(flagValue(args, "--id") || "", 10);
   if (!Number.isInteger(id)) {
-    console.error("Error: history requires --id N");
+    console.error("错误：history 需要参数 --id N");
     process.exit(1);
   }
   const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(id);
   if (!app) {
-    console.error(`Error: no application with id ${id}`);
+    console.error(`错误：没有编号为 ${id} 的申请记录`);
     process.exit(1);
   }
   console.log(`#${app.id} ${app.company} — ${app.role}`);
@@ -573,17 +573,17 @@ async function exportMd(args) {
     return;
   }
   if (existsSync(outPath) && statSync(outPath).isDirectory()) {
-    console.error(`Error: --out ${outPath} is a directory — pass a file path.`);
+    console.error(`错误：--out ${outPath} 是一个目录 — 请指定文件路径。`);
     process.exit(1);
   }
   mkdirSync(dirname(outPath) || ".", { recursive: true });
   // Never silently clobber — whatever was there is backed up first.
   if (existsSync(outPath)) {
     copyFileSync(outPath, outPath + ".bak");
-    console.error(`Existing ${outPath} backed up to ${outPath}.bak`);
+    console.error(`已将 ${outPath} 备份到 ${outPath}.bak`);
   }
   writeFileSync(outPath, out, "utf-8");
-  console.error(`Exported ${rows.length} applications to ${outPath}`);
+  console.error(`已导出 ${rows.length} 条申请记录到 ${outPath}`);
 }
 
 // ── Main ────────────────────────────────────────────────────────────
@@ -635,7 +635,7 @@ async function deleteApp(args) {
     console.error(
       `将从 ${MD_PATH} 中删除申请记录 ${num}（${removedCount} 行）。`,
     );
-    if (report) console.error(`(report file would be orphaned: ${report})`);
+    if (report) console.error(`（报告文件可能成为孤儿文件 — ${report}）`);
     return;
   }
   writeFileAtomic(MD_PATH, newContent);
@@ -646,7 +646,7 @@ async function deleteApp(args) {
     const db = openDb(DatabaseSync);
     syncIndex(db, states);
   } catch (e) {
-    console.error(`(row removed; index resync skipped: ${e.message})`);
+    console.error(`（行已删除；索引重新同步已跳过：${e.message}）`);
   }
   console.error(
     `已从 ${MD_PATH} 中删除申请记录 ${num}（${removedCount} 行）并重新索引。`,

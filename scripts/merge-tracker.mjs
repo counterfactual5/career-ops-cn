@@ -325,7 +325,7 @@ try {
   });
   process.once('exit', () => trackerLock?.release());
   if (trackerLock.waitMs > 0 || trackerLock.staleRecovered) {
-    console.log(`🔒 Tracker merge lock acquired (wait_ms=${trackerLock.waitMs} | attempts=${trackerLock.attempts} | stale_recovered=${trackerLock.staleRecovered})`);
+    console.log(`🔒 已获取追踪器合并锁 (wait_ms=${trackerLock.waitMs} | attempts=${trackerLock.attempts} | stale_recovered=${trackerLock.staleRecovered})`);
   }
 } catch (err) {
   console.error(`❌ ${err.message}`);
@@ -366,6 +366,15 @@ function validateStatus(status) {
     'descartado': 'Discarded', 'descartada': 'Discarded', 'cerrada': 'Discarded', 'cancelada': 'Discarded',
     'no aplicar': 'SKIP', 'no_aplicar': 'SKIP', 'skip': 'SKIP', 'monitor': 'SKIP',
     'geo blocker': 'SKIP',
+    // 中文别名 → English (与 states.yml 保持一致)
+    '已评估': 'Evaluated',
+    '已投递': 'Applied', '已提交': 'Applied',
+    '已回复': 'Responded',
+    '面试中': 'Interview', '面试': 'Interview',
+    '已录用': 'Offer', '录用': 'Offer', 'offer': 'Offer',
+    '已拒绝': 'Rejected', '拒绝': 'Rejected',
+    '已放弃': 'Discarded', '放弃': 'Discarded', '已关闭': 'Discarded',
+    '跳过': 'SKIP', '不投递': 'SKIP', '监控': 'SKIP',
   };
 
   if (aliases[lower]) return aliases[lower];
@@ -373,7 +382,7 @@ function validateStatus(status) {
   // DUPLICADO/Repost → Discarded
   if (/^(duplicado|dup|repost)/i.test(lower)) return 'Discarded';
 
-  console.warn(`⚠️  Non-canonical status "${status}" → defaulting to "Evaluated"`);
+  console.warn(`⚠️  非标准状态 "${status}" → 默认设为 "Evaluated"`);
   return 'Evaluated';
 }
 
@@ -389,7 +398,7 @@ function validateStatus(status) {
  * @returns {string} Lowercase alphanumeric company key.
  */
 function normalizeCompany(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 }
 
 /**
@@ -507,7 +516,7 @@ function parseTsvContent(content, filename) {
   if (content.startsWith('|')) {
     parts = content.split('|').map(s => s.trim()).filter(Boolean);
     if (parts.length < 8) {
-      console.warn(`⚠️  Skipping malformed pipe-delimited ${filename}: ${parts.length} fields`);
+      console.warn(`⚠️  跳过格式错误的管道分隔行 ${filename}：${parts.length} 个字段`);
       return null;
     }
     // Format: num | date | company | role | score | status | pdf | report | notes [| location]
@@ -527,7 +536,7 @@ function parseTsvContent(content, filename) {
     // Tab-separated
     parts = content.split('\t');
     if (parts.length < 8) {
-      console.warn(`⚠️  Skipping malformed TSV ${filename}: ${parts.length} fields`);
+      console.warn(`⚠️  跳过格式错误的 TSV ${filename}：${parts.length} 个字段`);
       return null;
     }
 
@@ -537,8 +546,8 @@ function parseTsvContent(content, filename) {
     const col5 = parts[5].trim();
     const col4LooksLikeScore = /^\d+\.?\d*\/5$/.test(col4) || col4 === 'N/A' || col4 === 'DUP';
     const col5LooksLikeScore = /^\d+\.?\d*\/5$/.test(col5) || col5 === 'N/A' || col5 === 'DUP';
-    const col4LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col4);
-    const col5LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col5);
+    const col4LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor|已评估|已投递|已提交|已回复|面试中|面试|已录用|录用|已拒绝|拒绝|已放弃|放弃|已关闭|跳过|不投递|监控)/i.test(col4);
+    const col5LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor|已评估|已投递|已提交|已回复|面试中|面试|已录用|录用|已拒绝|拒绝|已放弃|放弃|已关闭|跳过|不投递|监控)/i.test(col5);
 
     let statusCol, scoreCol;
     if (col4LooksLikeStatus && !col4LooksLikeScore) {
@@ -571,7 +580,7 @@ function parseTsvContent(content, filename) {
   }
 
   if (isNaN(addition.num) || addition.num === 0) {
-    console.warn(`⚠️  Skipping ${filename}: invalid entry number`);
+    console.warn(`⚠️  跳过 ${filename}：无效条目编号`);
     return null;
   }
 
@@ -582,7 +591,7 @@ function parseTsvContent(content, filename) {
 
 // Read applications.md
 if (!existsSync(APPS_FILE)) {
-  console.log('No applications.md found. Nothing to merge into.');
+  console.log('未找到 applications.md，没有可合并的内容。');
   process.exit(0);
 }
 const appContent = readFileSync(APPS_FILE, 'utf-8');
@@ -606,10 +615,10 @@ if (MIGRATE) {
   const changed = migrated.filter((l, i) => l !== before[i]).length;
 
   if (DRY_RUN) {
-    console.log(`🔎 Migration (dry-run): ${changed} row(s) would be rewritten in ${basename(APPS_FILE)}`);
+    console.log(`🔎 迁移（试运行）：将重写 ${basename(APPS_FILE)} 中的 ${changed} 行`);
   } else {
     writeFileAtomic(APPS_FILE, migrated.join('\n'));
-    console.log(`✅ Migration: rewrote ${changed} report link(s) in ${basename(APPS_FILE)} relative to ${TRACKER_DIR === CAREER_OPS ? 'repo root' : 'data/'}`);
+    console.log(`✅ 迁移完成：在 ${basename(APPS_FILE)} 中重写了 ${changed} 个报告链接（相对于 ${TRACKER_DIR === CAREER_OPS ? '仓库根目录' : 'data/'}）`);
   }
   process.exit(0);
 }
@@ -619,12 +628,12 @@ const appLines = appContent.split('\n');
 // both work whether the table uses the original 9-column layout or a customized
 // one (e.g. with a Location column after Role). Falls back to the legacy layout.
 COLMAP = detectColumns(appLines) || LEGACY_COLMAP;
-if (COLMAP.location != null) console.log('🧭 Detected Location column.');
+if (COLMAP.location != null) console.log('🧭 检测到 Location 列。');
 const existingApps = [];
 let maxNum = 0;
 
 for (const line of appLines) {
-  if (line.startsWith('|') && !line.includes('---') && !line.includes('Empresa')) {
+  if (line.startsWith('|') && !line.includes('---') && !line.includes('Empresa') && !line.includes('公司')) {
     const app = parseAppLine(line);
     if (app) {
       existingApps.push(app);
@@ -633,17 +642,17 @@ for (const line of appLines) {
   }
 }
 
-console.log(`📊 Existing: ${existingApps.length} entries, max #${maxNum}`);
+console.log(`📊 现有：${existingApps.length} 条记录，最大编号 #${maxNum}`);
 
 // Read tracker additions
 if (!existsSync(ADDITIONS_DIR)) {
-  console.log('No tracker-additions directory found.');
+  console.log('未找到 tracker-additions 目录。');
   process.exit(0);
 }
 
 const tsvFiles = readdirSync(ADDITIONS_DIR).filter(f => f.endsWith('.tsv'));
 if (tsvFiles.length === 0) {
-  console.log('✅ No pending additions to merge.');
+  console.log('✅ 无待合并的新增记录。');
   process.exit(0);
 }
 
@@ -654,7 +663,7 @@ tsvFiles.sort((a, b) => {
   return numA - numB;
 });
 
-console.log(`📥 Found ${tsvFiles.length} pending additions`);
+console.log(`📥 找到 ${tsvFiles.length} 个待合并新增记录`);
 
 let added = 0;
 let updated = 0;
@@ -717,7 +726,7 @@ for (const file of tsvFiles) {
     const oldScore = parseScore(duplicate.score);
 
     if (newScore > oldScore) {
-      console.log(`🔄 Update: #${duplicate.num} ${addition.company} — ${addition.role} (${oldScore}→${newScore})`);
+      console.log(`🔄 更新：#${duplicate.num} ${addition.company} — ${addition.role} (${oldScore}→${newScore})`);
       const lineIdx = appLines.indexOf(duplicate.raw);
       if (lineIdx >= 0) {
         const updatedLine = buildRow({
@@ -725,13 +734,13 @@ for (const file of tsvFiles) {
           location: addition.location || duplicate.location || '—',
           score: addition.score, status: duplicate.status, pdf: duplicate.pdf,
           report: addition.report,
-          notes: `Re-eval ${addition.date} (${oldScore}→${newScore}). ${addition.notes}`,
+          notes: `重新评估 ${addition.date} (${oldScore}→${newScore}). ${addition.notes}`,
         });
         appLines[lineIdx] = updatedLine;
         updated++;
       }
     } else {
-      console.log(`⏭️  Skip: ${addition.company} — ${addition.role} (existing #${duplicate.num} ${oldScore} >= new ${newScore})`);
+      console.log(`⏭️  跳过：${addition.company} — ${addition.role}（现有 #${duplicate.num} ${oldScore} >= 新 ${newScore}）`);
       skipped++;
     }
   } else {
@@ -747,7 +756,7 @@ for (const file of tsvFiles) {
     });
     newLines.push(newLine);
     added++;
-    console.log(`➕ Add #${entryNum}: ${addition.company} — ${addition.role} (${addition.score})`);
+    console.log(`➕ 添加 #${entryNum}：${addition.company} — ${addition.role} (${addition.score})`);
   }
 }
 
@@ -775,16 +784,16 @@ if (!DRY_RUN) {
   for (const file of tsvFiles) {
     renameSync(join(ADDITIONS_DIR, file), join(MERGED_DIR, file));
   }
-  console.log(`\n✅ Moved ${tsvFiles.length} TSVs to merged/`);
+  console.log(`\n✅ 已将 ${tsvFiles.length} 个 TSV 移至 merged/`);
 }
 
-console.log(`\n📊 Summary: +${added} added, 🔄${updated} updated, ⏭️${skipped} skipped`);
-if (DRY_RUN) console.log('(dry-run — no changes written)');
+console.log(`\n📊 汇总：+${added} 新增，🔄${updated} 更新，⏭️${skipped} 跳过`);
+if (DRY_RUN) console.log('（试运行 — 未写入更改）');
 trackerLock.release();
 
 // Optional verify
 if (VERIFY && !DRY_RUN) {
-  console.log('\n--- Running verification ---');
+  console.log('\n--- 正在运行验证 ---');
   try {
     execFileSync('node', [join(CAREER_OPS, 'verify-pipeline.mjs')], { stdio: 'inherit' });
   } catch (e) {

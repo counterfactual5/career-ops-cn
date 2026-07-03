@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // evaluated yet. No scan runs here — it reads the history a past scan already
 // wrote, so the home stays instant + free (directly answers the #1 token-cost
 // complaint). cols: url, first_seen, portal, title, company, status, location.
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
 export async function GET(req: Request) {
   const days = Math.min(30, Math.max(1, Number(new URL(req.url).searchParams.get("days")) || 7));

@@ -83,6 +83,23 @@ const ALIASES = {
   no_aplicar: "skip",
   monitor: "skip",
   "geo blocker": "skip",
+  // 中文别名 (与 states.yml 保持一致)
+  已评估: "evaluated",
+  已投递: "applied",
+  已提交: "applied",
+  已回复: "responded",
+  面试中: "interview",
+  面试: "interview",
+  已录用: "offer",
+  录用: "offer",
+  已拒绝: "rejected",
+  拒绝: "rejected",
+  已放弃: "discarded",
+  放弃: "discarded",
+  已关闭: "discarded",
+  跳过: "skip",
+  不投递: "skip",
+  监控: "skip",
 };
 
 let errors = 0;
@@ -131,20 +148,29 @@ const HEADER_ALIASES = {
   date: "date",
   company: "company",
   empresa: "company",
+  公司: "company",
   role: "role",
   puesto: "role",
+  岗位: "role",
+  职位: "role",
   location: "location",
+  地点: "location",
   score: "score",
+  评分: "score",
   status: "status",
+  状态: "status",
   pdf: "pdf",
   report: "report",
+  报告: "report",
   notes: "notes",
+  备注: "notes",
 };
 function detectColumns(allLines) {
   for (const line of allLines) {
     if (!line.startsWith("|")) continue;
     const cells = line.split("|").map((s) => s.trim().toLowerCase());
-    if (!cells.includes("company") || !cells.includes("role")) continue;
+    if (!cells.includes("company") && !cells.includes("公司")) continue;
+    if (!cells.includes("role") && !cells.includes("岗位") && !cells.includes("职位")) continue;
     const map = {};
     cells.forEach((c, i) => {
       if (HEADER_ALIASES[c] != null) map[HEADER_ALIASES[c]] = i;
@@ -190,20 +216,20 @@ for (const e of entries) {
   const statusOnly = clean.replace(/\s+\d{4}-\d{2}-\d{2}.*$/, "").trim();
 
   if (!CANONICAL_STATUSES.includes(statusOnly) && !ALIASES[statusOnly]) {
-    error(`#${e.num}: Non-canonical status "${e.status}"`);
+    error(`#${e.num}: 非标准状态 "${e.status}"`);
     badStatuses++;
   }
 
   // Check for markdown bold in status
   if (e.status.includes("**")) {
-    error(`#${e.num}: Status contains markdown bold: "${e.status}"`);
+    error(`#${e.num}: 状态包含 markdown 粗体："${e.status}"`);
     badStatuses++;
   }
 
   // Check for dates in status
   if (/\d{4}-\d{2}-\d{2}/.test(e.status)) {
     error(
-      `#${e.num}: Status contains date: "${e.status}" — dates go in date column`,
+      `#${e.num}: 状态包含日期："${e.status}" — 日期应放在 date 列`,
     );
     badStatuses++;
   }
@@ -215,16 +241,16 @@ const companyRoleMap = new Map();
 let dupes = 0;
 for (const e of entries) {
   const key =
-    e.company.toLowerCase().replace(/[^a-z0-9]/g, "") +
+    e.company.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "") +
     "::" +
-    e.role.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+    e.role.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "");
   if (!companyRoleMap.has(key)) companyRoleMap.set(key, []);
   companyRoleMap.get(key).push(e);
 }
 for (const [key, group] of companyRoleMap) {
   if (group.length > 1) {
     warn(
-      `Possible duplicates: ${group.map((e) => `#${e.num}`).join(", ")} (${group[0].company} — ${group[0].role})`,
+      `可能重复：${group.map((e) => `#${e.num}`).join(", ")} (${group[0].company} — ${group[0].role})`,
     );
     dupes++;
   }
@@ -246,7 +272,7 @@ for (const e of entries) {
     !existsSync(join(TRACKER_DIR, link)) &&
     !existsSync(join(CAREER_OPS, link))
   ) {
-    error(`#${e.num}: Report not found: ${link}`);
+    error(`#${e.num}: 报告未找到：${link}`);
     brokenReports++;
   }
 }
@@ -257,7 +283,7 @@ let badScores = 0;
 for (const e of entries) {
   const s = e.score.replace(/\*\*/g, "").trim();
   if (!/^\d+\.?\d*\/5$/.test(s) && s !== "N/A" && s !== "DUP") {
-    error(`#${e.num}: Invalid score format: "${e.score}"`);
+    error(`#${e.num}: 无效评分格式："${e.score}"`);
     badScores++;
   }
 }
@@ -267,11 +293,11 @@ if (badScores === 0) ok("所有评分格式有效");
 let badRows = 0;
 for (const line of lines) {
   if (!line.startsWith("|")) continue;
-  if (line.includes("---") || line.includes("Empresa")) continue;
+  if (line.includes("---") || line.includes("Empresa") || line.includes("公司")) continue;
   const parts = line.split("|");
   if (parts.length <= MAX_IDX) {
     error(
-      `Row with too few columns (need ${MAX_IDX} data cols): ${line.substring(0, 80)}...`,
+      `行列数不足（需要 ${MAX_IDX} 列数据）：${line.substring(0, 80)}...`,
     );
     badRows++;
   }
@@ -284,7 +310,7 @@ if (existsSync(ADDITIONS_DIR)) {
   const files = readdirSync(ADDITIONS_DIR).filter((f) => f.endsWith(".tsv"));
   pendingTsvs = files.length;
   if (pendingTsvs > 0) {
-    warn(`${pendingTsvs} pending TSVs in tracker-additions/ (not merged)`);
+    warn(`${pendingTsvs} 个待合并 TSV 在 tracker-additions/ 中`);
   }
 }
 if (pendingTsvs === 0) ok("无待合并 TSV");
@@ -293,7 +319,7 @@ if (pendingTsvs === 0) ok("无待合并 TSV");
 let boldScores = 0;
 for (const e of entries) {
   if (e.score.includes("**")) {
-    warn(`#${e.num}: Score has markdown bold: "${e.score}"`);
+    warn(`#${e.num}: 评分包含 markdown 粗体："${e.score}"`);
     boldScores++;
   }
 }
@@ -315,7 +341,7 @@ if (existsSync(REPORTS_DIR)) {
       const { mtimeMs } = statSync(full);
       if (now - mtimeMs > SENTINEL_MAX_AGE_MS) {
         unlinkSync(full);
-        warn(`Removed stale reservation sentinel: ${name}`);
+        warn(`已删除过期保留标记：${name}`);
         staleSentinels++;
       }
     } catch {
@@ -331,11 +357,11 @@ if (staleSentinels === 0) ok("无过期保留标记");
 // Warning-level, not error: duplicates can be legitimate (re-evaluation
 // after a JD change).
 const REPORT_FILE_RE = /^(\d+)-(.+)-\d{4}-\d{2}-\d{2}\.md$/;
-const normalizeKey = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+const normalizeKey = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 // Role comes from the report body: the Machine Summary YAML fence when
 // present (field names are exact by contract), else the title line
-// "# Evaluación: {Company} — {Role}". Reports where neither parses are
+// "# 评估：{Company} — {Role}" (or legacy "# Evaluación: …"). Reports where neither parses are
 // skipped rather than grouped by company alone, which would false-positive
 // on two different roles at the same company.
 function extractRole(reportContent) {
@@ -376,7 +402,7 @@ for (const name of reportFiles) {
 }
 for (const group of reportsByRole.values()) {
   if (group.length > 1) {
-    warn(`Duplicate reports for same company+role: ${group.join(", ")}`);
+    warn(`同一公司+岗位存在重复报告：${group.join(", ")}`);
     dupReports++;
   }
 }
@@ -405,7 +431,7 @@ let orphanReports = 0;
 for (const name of reportFiles) {
   const num = parseInt(name.match(REPORT_FILE_RE)[1], 10);
   if (!referencedNums.has(num)) {
-    warn(`Orphan report — no tracker row references #${num}: reports/${name}`);
+    warn(`孤儿报告 — 无追踪行引用 #${num}：reports/${name}`);
     orphanReports++;
   }
 }

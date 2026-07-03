@@ -130,14 +130,14 @@ function main() {
   const json = args.includes('--json');
   const query = args.filter(a => a !== '--json').join(' ').trim();
   if (!query) {
-    console.log('Usage: node find.mjs <report# | tracker# | company/role fragment> [--json]');
+    console.log('用法：node find.mjs <报告编号 | 追踪编号 | 公司/岗位关键词> [--json]');
     process.exitCode = 1;
     return;
   }
 
   const trackerPath = process.env.CAREER_OPS_TRACKER || resolve(ROOT, 'data', 'applications.md');
   if (!existsSync(trackerPath)) {
-    console.error(`Error: ${trackerPath} not found — nothing to search.`);
+    console.error(`错误：${trackerPath} 未找到 — 没有可搜索的内容。`);
     process.exitCode = 1;
     return;
   }
@@ -155,12 +155,12 @@ function main() {
     return;
   }
   if (matches.length === 0) {
-    console.log(`No application matches "${query}" — try a report #, tracker #, or company fragment.`);
+    console.log(`没有匹配 "${query}" 的申请记录 — 试试报告编号、追踪编号或公司关键词。`);
     process.exitCode = 1;
     return;
   }
 
-  const headers = ['Tracker#', 'Report#', 'Company', 'Role', 'Status', 'PDF', 'Report'];
+  const headers = ['追踪#', '报告#', '公司', '岗位', '状态', 'PDF', '报告'];
   const table = matches.map(m => [
     String(m.trackerNum), m.reportNum ?? '—', m.company, m.role,
     m.status || '—', m.pdfPath ?? '—', m.reportPath ?? '—',
@@ -170,7 +170,7 @@ function main() {
   console.log(fmt(headers));
   console.log(fmt(widths.map(w => '-'.repeat(w))));
   for (const r of table) console.log(fmt(r));
-  console.error(`\n${matches.length} match(es)`); // stderr so stdout stays pipeable
+  console.error(`\n${matches.length} 条匹配`); // stderr so stdout stays pipeable
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

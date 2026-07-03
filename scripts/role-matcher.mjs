@@ -64,7 +64,7 @@ export function roleTokens(role) {
   const text = typeof role === 'string' ? role : String(role ?? '');
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
     .filter(w => (w.length > 3 || SHORT_SPECIALTY.has(w)) && !ROLE_STOPWORDS.has(w));
 }
@@ -89,6 +89,14 @@ export function roleFuzzyMatch(a, b) {
 
   const setB = new Set(wordsB);
   const overlap = wordsA.filter(w => setB.has(w));
+
+  // CJK titles often produce a single token (no spaces). Two identical
+  // single-token titles are the same opening — the 2-token threshold below
+  // would otherwise reject them.
+  if (wordsA.length === 1 && wordsB.length === 1) {
+    return wordsA[0] === wordsB[0];
+  }
+
   if (overlap.length < 2) return false;
 
   // Require at least one non-baseline token in the overlap. Roles that share

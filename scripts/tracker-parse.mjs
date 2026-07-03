@@ -17,11 +17,13 @@ export const LEGACY_COLMAP = {
   num: 1, date: 2, company: 3, role: 4, score: 5, status: 6, pdf: 7, report: 8, notes: 9,
 };
 
-/** Header text (lowercased) → canonical field name. Includes ES aliases. */
+/** Header text (lowercased) → canonical field name. Includes ES and CN aliases. */
 export const HEADER_ALIASES = {
   '#': 'num', 'num': 'num', 'date': 'date', 'company': 'company', 'empresa': 'company',
-  'role': 'role', 'puesto': 'role', 'location': 'location', 'score': 'score',
-  'status': 'status', 'pdf': 'pdf', 'report': 'report', 'notes': 'notes',
+  '公司': 'company', 'role': 'role', 'puesto': 'role', '岗位': 'role', '职位': 'role',
+  'location': 'location', '地点': 'location', 'score': 'score', '评分': 'score',
+  'status': 'status', '状态': 'status', 'pdf': 'pdf', 'report': 'report', '报告': 'report',
+  'notes': 'notes', '备注': 'notes',
 };
 
 /**
@@ -37,7 +39,8 @@ export function detectColumns(lines) {
   for (const line of lines) {
     if (!line.startsWith('|')) continue;
     const cells = line.split('|').map(s => s.trim().toLowerCase());
-    if (!cells.includes('company') || !cells.includes('role')) continue;
+    if (!cells.includes('company') && !cells.includes('公司')) continue;
+    if (!cells.includes('role') && !cells.includes('岗位') && !cells.includes('职位')) continue;
     const map = {};
     cells.forEach((c, i) => { if (HEADER_ALIASES[c] != null) map[HEADER_ALIASES[c]] = i; });
     if (['num', 'company', 'role', 'score', 'status'].every(k => map[k] != null)) return map;

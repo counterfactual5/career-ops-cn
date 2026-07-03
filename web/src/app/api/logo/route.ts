@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     key = domain.replace(/[^a-z0-9.-]/g, "_");
     candidates = [domain];
   } else if (company) {
-    const slug = company.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
+    const slug = company.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "").slice(0, 40);
     if (!slug) return new Response("bad company", { status: 400 });
     key = `co_${slug}`;
     candidates = companyDomains(company);

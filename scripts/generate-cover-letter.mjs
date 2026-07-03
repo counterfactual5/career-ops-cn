@@ -181,8 +181,8 @@ Usage:
   }
 
   if (!payload.output_path) {
-    const company = (payload.letter?.company || "company").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const role    = (payload.letter?.role_title || "role").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30);
+    const company = (payload.letter?.company || "company").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-");
+    const role    = (payload.letter?.role_title || "role").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 30);
     payload.output_path = join(OUTPUT_ROOT, `${company}-${role}-cover.pdf`);
   } else {
     payload.output_path = safeOutputPath(payload.output_path);
