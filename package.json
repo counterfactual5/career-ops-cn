@@ -4,17 +4,17 @@
   "description": "AI-powered job search assistant for China market — 面向中国市场的 AI 求职助手",
   "private": true,
   "scripts": {
-    "doctor": "node doctor.mjs",
-    "verify": "node verify-pipeline.mjs",
-    "merge": "node merge-tracker.mjs",
-    "reconcile": "node reconcile-pipeline.mjs",
-    "pdf": "node generate-pdf.mjs",
-    "cover-letter": "node generate-cover-letter.mjs --payload",
-    "sync-check": "node cv-sync-check.mjs",
-    "tracker": "node tracker.mjs",
-    "find": "node find.mjs",
-    "archive": "node archive-posting.mjs",
-    "prepare:application": "node prepare-application.mjs"
+    "doctor": "node scripts/doctor.mjs"
+    "verify": "node scripts/verify-pipeline.mjs"
+    "merge": "node scripts/merge-tracker.mjs"
+    "reconcile": "node scripts/reconcile-pipeline.mjs"
+    "pdf": "node scripts/generate-pdf.mjs"
+    "cover-letter": "node scripts/generate-cover-letter.mjs --payload"
+    "sync-check": "node scripts/cv-sync-check.mjs"
+    "tracker": "node scripts/tracker.mjs"
+    "find": "node scripts/find.mjs"
+    "archive": "node scripts/archive-posting.mjs"
+    "prepare:application": "node scripts/prepare-application.mjs"
   },
   "keywords": [
     "ai",

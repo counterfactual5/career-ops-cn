@@ -43,12 +43,12 @@ career-ops-cn/
 │   ├── apply.md      # 申请表单助手
 │   └── pipeline.md   # 批量处理流程
 ├── web/              # Next.js 前端（本地可视化）
+├── scripts/          # 核心工具脚本
 ├── config/           # 个人配置
 ├── templates/        # 简历 PDF 模板
 ├── fonts/            # PDF 字体
 ├── data/             # 追踪数据
-├── reports/          # 评估报告存档
-└── *.mjs             # 核心工具脚本
+└── reports/          # 评估报告存档
 ```
 
 ### 重点说明
