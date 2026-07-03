@@ -11,13 +11,13 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Today", icon: LayoutDashboard },
-  { href: "/explore", label: "Explore", icon: Compass, chip: "New" },
-  { href: "/pipeline", label: "Pipeline", icon: ListChecks },
-  { href: "/portals", label: "Portals", icon: Radar },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/cv", label: "CV", icon: FileText },
-  { href: "/config", label: "Config", icon: Settings },
+  { href: "/", label: "今日", icon: LayoutDashboard },
+  { href: "/explore", label: "发现", icon: Compass, chip: "新" },
+  { href: "/pipeline", label: "待办", icon: ListChecks },
+  { href: "/portals", label: "平台", icon: Radar },
+  { href: "/analytics", label: "分析", icon: BarChart3 },
+  { href: "/cv", label: "简历", icon: FileText },
+  { href: "/config", label: "配置", icon: Settings },
 ];
 
 export function isActivePath(href: string, pathname: string): boolean {

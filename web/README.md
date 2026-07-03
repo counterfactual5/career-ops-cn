@@ -1,15 +1,8 @@
-# career-ops web (alpha)
+# career-ops-cn web
 
-An **experimental, opt-in web UI** for career-ops. It is a local-first *view* over
-the exact same files the CLI reads and writes (`data/pipeline.md`,
-`data/applications.md`, `reports/`, `config/`): no parallel engine, no separate
-database, no server. If you never run it, nothing about your CLI workflow changes.
+An **experimental, opt-in web UI** for career-ops-cn. 本地优先的可视化面板。
 
-> **Status: alpha.** Expect rough edges. Feedback →
-> [Discussion #1142](https://github.com/santifer/career-ops/discussions/1142) ·
-> roadmap context → [Discussion #156](https://github.com/santifer/career-ops/discussions/156).
-
-## Quick start
+## 快速开始
 
 Requires Node 20+.
 
@@ -19,8 +12,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The app reads the career-ops checkout it lives in
-(the parent directory) — your existing CV, pipeline and reports appear as-is.
+打开 http://localhost:3000
 
 ## What works today
 

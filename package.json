@@ -4,16 +4,16 @@
   "description": "AI-powered job search assistant for China market — 面向中国市场的 AI 求职助手",
   "private": true,
   "scripts": {
-    "doctor": "node scripts/doctor.mjs"
-    "verify": "node scripts/verify-pipeline.mjs"
-    "merge": "node scripts/merge-tracker.mjs"
-    "reconcile": "node scripts/reconcile-pipeline.mjs"
-    "pdf": "node scripts/generate-pdf.mjs"
-    "cover-letter": "node scripts/generate-cover-letter.mjs --payload"
-    "sync-check": "node scripts/cv-sync-check.mjs"
-    "tracker": "node scripts/tracker.mjs"
-    "find": "node scripts/find.mjs"
-    "archive": "node scripts/archive-posting.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "verify": "node scripts/verify-pipeline.mjs",
+    "merge": "node scripts/merge-tracker.mjs",
+    "reconcile": "node scripts/reconcile-pipeline.mjs",
+    "pdf": "node scripts/generate-pdf.mjs",
+    "cover-letter": "node scripts/generate-cover-letter.mjs --payload",
+    "sync-check": "node scripts/cv-sync-check.mjs",
+    "tracker": "node scripts/tracker.mjs",
+    "find": "node scripts/find.mjs",
+    "archive": "node scripts/archive-posting.mjs",
     "prepare:application": "node scripts/prepare-application.mjs"
   },
   "keywords": [
@@ -32,9 +32,12 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "dotenv": "^17.0.0",
-    "js-yaml": "^4.1.1",
-    "playwright": "1.61.1"
+    "js-yaml": "^4.1.1"
+  },
+  "optionalDependencies": {
+    "playwright": "^1.61.0"
+  },
+  "notes": {
+    "playwright": "可选依赖，仅 generate-pdf.mjs 需要。不安装也可使用所有 AI 评估功能，只是无法生成 PDF 简历。安装：npm install playwright && npx playwright install chromium"
   }
 }
