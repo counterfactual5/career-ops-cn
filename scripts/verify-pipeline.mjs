@@ -28,7 +28,7 @@ import {
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original).
 // CAREER_OPS_TRACKER overrides the path (used by tests and non-standard layouts).
 const APPS_FILE = process.env.CAREER_OPS_TRACKER
@@ -170,7 +170,12 @@ function detectColumns(allLines) {
     if (!line.startsWith("|")) continue;
     const cells = line.split("|").map((s) => s.trim().toLowerCase());
     if (!cells.includes("company") && !cells.includes("公司")) continue;
-    if (!cells.includes("role") && !cells.includes("岗位") && !cells.includes("职位")) continue;
+    if (
+      !cells.includes("role") &&
+      !cells.includes("岗位") &&
+      !cells.includes("职位")
+    )
+      continue;
     const map = {};
     cells.forEach((c, i) => {
       if (HEADER_ALIASES[c] != null) map[HEADER_ALIASES[c]] = i;
@@ -228,9 +233,7 @@ for (const e of entries) {
 
   // Check for dates in status
   if (/\d{4}-\d{2}-\d{2}/.test(e.status)) {
-    error(
-      `#${e.num}: 状态包含日期："${e.status}" — 日期应放在 date 列`,
-    );
+    error(`#${e.num}: 状态包含日期："${e.status}" — 日期应放在 date 列`);
     badStatuses++;
   }
 }
@@ -293,12 +296,11 @@ if (badScores === 0) ok("所有评分格式有效");
 let badRows = 0;
 for (const line of lines) {
   if (!line.startsWith("|")) continue;
-  if (line.includes("---") || line.includes("Empresa") || line.includes("公司")) continue;
+  if (line.includes("---") || line.includes("Empresa") || line.includes("公司"))
+    continue;
   const parts = line.split("|");
   if (parts.length <= MAX_IDX) {
-    error(
-      `行列数不足（需要 ${MAX_IDX} 列数据）：${line.substring(0, 80)}...`,
-    );
+    error(`行列数不足（需要 ${MAX_IDX} 列数据）：${line.substring(0, 80)}...`);
     badRows++;
   }
 }

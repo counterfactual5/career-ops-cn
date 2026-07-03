@@ -24,22 +24,28 @@
  * manifest data/pdf-index.tsv (written by generate-pdf.mjs).
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
-import { resolveColumns, parseTrackerRow } from './tracker-parse.mjs';
-import { roleFuzzyMatch } from './role-matcher.mjs';
+import { readFileSync, existsSync } from "fs";
+import { dirname, resolve } from "path";
+import { fileURLToPath, pathToFileURL } from "url";
+import { resolveColumns, parseTrackerRow } from "./tracker-parse.mjs";
+import { roleFuzzyMatch } from "./role-matcher.mjs";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // "008" and "8" are the same report — zero-padded report-link form vs unpadded
 // tracker-# form (same normalization as the manifest writer in generate-pdf.mjs).
-const normNum = (s) => String(s ?? '').trim().replace(/^0+(?=\d)/, '');
+const normNum = (s) =>
+  String(s ?? "")
+    .trim()
+    .replace(/^0+(?=\d)/, "");
 
 // Same status hygiene as tracker.mjs: strip markdown bold and stray dates so a
 // messy cell still prints as its canonical label.
 const cleanStatus = (s) =>
-  String(s ?? '').replace(/\*\*/g, '').replace(/\(?\d{4}-\d{2}-\d{2}\)?/g, '').trim();
+  String(s ?? "")
+    .replace(/\*\*/g, "")
+    .replace(/\(?\d{4}-\d{2}-\d{2}\)?/g, "")
+    .trim();
 
 /**
  * Parse the tracker markdown into lookup rows.
@@ -53,7 +59,7 @@ const cleanStatus = (s) =>
  * @returns {Array<{trackerNum:number,date:string,company:string,role:string,score:string,status:string,reportNum:string|null,reportPath:string|null}>}
  */
 export function parseTrackerRows(text) {
-  const lines = String(text ?? '').split('\n');
+  const lines = String(text ?? "").split("\n");
   const colmap = resolveColumns(lines);
   const rows = [];
   for (const line of lines) {
@@ -68,7 +74,7 @@ export function parseTrackerRows(text) {
       score: row.score,
       status: cleanStatus(row.status),
       reportNum: link ? normNum(link[1]) : null,
-      reportPath: link ? link[2].replace(/^(\.\.\/)+/, '') : null,
+      reportPath: link ? link[2].replace(/^(\.\.\/)+/, "") : null,
     });
   }
   return rows;
@@ -84,9 +90,9 @@ export function parseTrackerRows(text) {
  */
 export function parsePdfIndex(text) {
   const map = new Map();
-  for (const line of String(text ?? '').split('\n')) {
-    if (!line.trim() || line.startsWith('#')) continue;
-    const fields = line.split('\t');
+  for (const line of String(text ?? "").split("\n")) {
+    if (!line.trim() || line.startsWith("#")) continue;
+    const fields = line.split("\t");
     if (!fields[0]?.trim() || !fields[1]) continue;
     map.set(normNum(fields[0]), fields[1]);
   }
@@ -102,22 +108,26 @@ export function parsePdfIndex(text) {
  * @returns {Array<object>} Matching rows, each augmented with `pdfPath` (null when no PDF is indexed for its report).
  */
 export function findMatches(rows, query, pdfIndex = new Map()) {
-  const q = String(query ?? '').trim();
+  const q = String(query ?? "").trim();
   if (!q) return [];
 
   let hits;
   if (/^\d+$/.test(q)) {
     const nq = normNum(q);
-    hits = rows.filter(r => String(r.trackerNum) === nq || r.reportNum === nq);
+    hits = rows.filter(
+      (r) => String(r.trackerNum) === nq || r.reportNum === nq,
+    );
   } else {
     const ql = q.toLowerCase();
-    hits = rows.filter(r =>
-      r.company.toLowerCase().includes(ql) ||
-      r.role.toLowerCase().includes(ql) ||
-      roleFuzzyMatch(r.company, q) ||
-      roleFuzzyMatch(r.role, q));
+    hits = rows.filter(
+      (r) =>
+        r.company.toLowerCase().includes(ql) ||
+        r.role.toLowerCase().includes(ql) ||
+        roleFuzzyMatch(r.company, q) ||
+        roleFuzzyMatch(r.role, q),
+    );
   }
-  return hits.map(r => ({
+  return hits.map((r) => ({
     ...r,
     pdfPath: (r.reportNum !== null && pdfIndex.get(r.reportNum)) || null,
   }));
@@ -127,25 +137,31 @@ export function findMatches(rows, query, pdfIndex = new Map()) {
 
 function main() {
   const args = process.argv.slice(2);
-  const json = args.includes('--json');
-  const query = args.filter(a => a !== '--json').join(' ').trim();
+  const json = args.includes("--json");
+  const query = args
+    .filter((a) => a !== "--json")
+    .join(" ")
+    .trim();
   if (!query) {
-    console.log('用法：node find.mjs <报告编号 | 追踪编号 | 公司/岗位关键词> [--json]');
+    console.log(
+      "用法：node find.mjs <报告编号 | 追踪编号 | 公司/岗位关键词> [--json]",
+    );
     process.exitCode = 1;
     return;
   }
 
-  const trackerPath = process.env.CAREER_OPS_TRACKER || resolve(ROOT, 'data', 'applications.md');
+  const trackerPath =
+    process.env.CAREER_OPS_TRACKER || resolve(ROOT, "data", "applications.md");
   if (!existsSync(trackerPath)) {
     console.error(`错误：${trackerPath} 未找到 — 没有可搜索的内容。`);
     process.exitCode = 1;
     return;
   }
-  const rows = parseTrackerRows(readFileSync(trackerPath, 'utf-8'));
+  const rows = parseTrackerRows(readFileSync(trackerPath, "utf-8"));
 
-  const manifestPath = resolve(ROOT, 'data', 'pdf-index.tsv');
+  const manifestPath = resolve(ROOT, "data", "pdf-index.tsv");
   const pdfIndex = existsSync(manifestPath)
-    ? parsePdfIndex(readFileSync(manifestPath, 'utf-8'))
+    ? parsePdfIndex(readFileSync(manifestPath, "utf-8"))
     : new Map();
 
   const matches = findMatches(rows, query, pdfIndex);
@@ -155,24 +171,37 @@ function main() {
     return;
   }
   if (matches.length === 0) {
-    console.log(`没有匹配 "${query}" 的申请记录 — 试试报告编号、追踪编号或公司关键词。`);
+    console.log(
+      `没有匹配 "${query}" 的申请记录 — 试试报告编号、追踪编号或公司关键词。`,
+    );
     process.exitCode = 1;
     return;
   }
 
-  const headers = ['追踪#', '报告#', '公司', '岗位', '状态', 'PDF', '报告'];
-  const table = matches.map(m => [
-    String(m.trackerNum), m.reportNum ?? '—', m.company, m.role,
-    m.status || '—', m.pdfPath ?? '—', m.reportPath ?? '—',
+  const headers = ["追踪#", "报告#", "公司", "岗位", "状态", "PDF", "报告"];
+  const table = matches.map((m) => [
+    String(m.trackerNum),
+    m.reportNum ?? "—",
+    m.company,
+    m.role,
+    m.status || "—",
+    m.pdfPath ?? "—",
+    m.reportPath ?? "—",
   ]);
-  const widths = headers.map((h, i) => Math.max(h.length, ...table.map(r => r[i].length)));
-  const fmt = (cells) => cells.map((c, i) => c.padEnd(widths[i])).join('  ').trimEnd();
+  const widths = headers.map((h, i) =>
+    Math.max(h.length, ...table.map((r) => r[i].length)),
+  );
+  const fmt = (cells) =>
+    cells
+      .map((c, i) => c.padEnd(widths[i]))
+      .join("  ")
+      .trimEnd();
   console.log(fmt(headers));
-  console.log(fmt(widths.map(w => '-'.repeat(w))));
+  console.log(fmt(widths.map((w) => "-".repeat(w))));
   for (const r of table) console.log(fmt(r));
   console.error(`\n${matches.length} 条匹配`); // stderr so stdout stays pipeable
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
   main();
 }

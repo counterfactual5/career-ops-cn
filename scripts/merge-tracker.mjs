@@ -14,43 +14,69 @@
  * Run: node career-ops/merge-tracker.mjs [--dry-run] [--verify]
  */
 
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, renameSync, existsSync, rmSync, statSync, realpathSync } from 'fs';
-import { join, basename, dirname, resolve, relative, isAbsolute, sep } from 'path';
-import { fileURLToPath } from 'url';
-import { execFileSync } from 'child_process';
-import { createHash, randomUUID } from 'crypto';
-import { tmpdir } from 'os';
-import { normalizeReportLink as normalizeLink } from './tracker-links.mjs';
-import { roleFuzzyMatch } from './role-matcher.mjs';
-import { LEGACY_COLMAP, detectColumns } from './tracker-parse.mjs';
+import {
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  mkdirSync,
+  renameSync,
+  existsSync,
+  rmSync,
+  statSync,
+  realpathSync,
+} from "fs";
+import {
+  join,
+  basename,
+  dirname,
+  resolve,
+  relative,
+  isAbsolute,
+  sep,
+} from "path";
+import { fileURLToPath } from "url";
+import { execFileSync } from "child_process";
+import { createHash, randomUUID } from "crypto";
+import { tmpdir } from "os";
+import { normalizeReportLink as normalizeLink } from "./tracker-links.mjs";
+import { roleFuzzyMatch } from "./role-matcher.mjs";
+import { LEGACY_COLMAP, detectColumns } from "./tracker-parse.mjs";
 
-const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
+// 脚本位于 scripts/ 下，项目根是上一级目录
+const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original).
 // CAREER_OPS_TRACKER overrides the path (used by tests and non-standard layouts).
 const APPS_FILE_RAW = process.env.CAREER_OPS_TRACKER
   ? process.env.CAREER_OPS_TRACKER
-  : existsSync(join(CAREER_OPS, 'data/applications.md'))
-    ? join(CAREER_OPS, 'data/applications.md')
-    : join(CAREER_OPS, 'applications.md');
+  : existsSync(join(CAREER_OPS, "data/applications.md"))
+    ? join(CAREER_OPS, "data/applications.md")
+    : join(CAREER_OPS, "applications.md");
 const APPS_FILE = canonicalizeTrackerPath(APPS_FILE_RAW);
 const TRACKER_DIR = dirname(APPS_FILE);
 // CAREER_OPS_ADDITIONS overrides the additions dir (used by tests, mirrors CAREER_OPS_TRACKER).
 const ADDITIONS_DIR = process.env.CAREER_OPS_ADDITIONS
   ? process.env.CAREER_OPS_ADDITIONS
-  : join(CAREER_OPS, 'batch/tracker-additions');
-const MERGED_DIR = join(ADDITIONS_DIR, 'merged');
-const DRY_RUN = process.argv.includes('--dry-run');
-const VERIFY = process.argv.includes('--verify');
-const MIGRATE = process.argv.includes('--migrate');
+  : join(CAREER_OPS, "batch/tracker-additions");
+const MERGED_DIR = join(ADDITIONS_DIR, "merged");
+const DRY_RUN = process.argv.includes("--dry-run");
+const VERIFY = process.argv.includes("--verify");
+const MIGRATE = process.argv.includes("--migrate");
 const MERGE_HOLD_MS = Number(process.env.CAREER_OPS_MERGE_HOLD_MS) || 0;
-const MERGE_READY_IPC = process.env.CAREER_OPS_MERGE_READY_IPC === '1';
+const MERGE_READY_IPC = process.env.CAREER_OPS_MERGE_READY_IPC === "1";
 
-const trackerLockKey = createHash('sha256').update(APPS_FILE).digest('hex').slice(0, 16);
-const TRACKER_LOCK_DIR = resolveTrackerLockDir(process.env.CAREER_OPS_TRACKER_LOCK, trackerLockKey);
+const trackerLockKey = createHash("sha256")
+  .update(APPS_FILE)
+  .digest("hex")
+  .slice(0, 16);
+const TRACKER_LOCK_DIR = resolveTrackerLockDir(
+  process.env.CAREER_OPS_TRACKER_LOCK,
+  trackerLockKey,
+);
 
 // The reports/ dir sits at the repo root, which is the tracker's parent in the
 // data/ layout (data/applications.md) and the tracker's own dir at root layout.
-const REPORTS_ROOT = basename(TRACKER_DIR) === 'data' ? dirname(TRACKER_DIR) : TRACKER_DIR;
+const REPORTS_ROOT =
+  basename(TRACKER_DIR) === "data" ? dirname(TRACKER_DIR) : TRACKER_DIR;
 
 /**
  * Normalize report links before writing them into the tracker file.
@@ -63,10 +89,11 @@ const REPORTS_ROOT = basename(TRACKER_DIR) === 'data' ? dirname(TRACKER_DIR) : T
  * @param {string} reportField - Raw report cell from a TSV addition.
  * @returns {string} Markdown report link relative to the tracker file.
  */
-const normalizeReportLink = (reportField) => normalizeLink(reportField, TRACKER_DIR, REPORTS_ROOT);
+const normalizeReportLink = (reportField) =>
+  normalizeLink(reportField, TRACKER_DIR, REPORTS_ROOT);
 
 // Ensure required directories exist (fresh setup)
-mkdirSync(join(CAREER_OPS, 'data'), { recursive: true });
+mkdirSync(join(CAREER_OPS, "data"), { recursive: true });
 mkdirSync(ADDITIONS_DIR, { recursive: true });
 
 /**
@@ -101,7 +128,12 @@ function canonicalizeTrackerPath(path) {
  */
 function pathIsInside(childPath, parentDir) {
   const relativePath = relative(parentDir, childPath);
-  return relativePath === '' || (relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath));
+  return (
+    relativePath === "" ||
+    (relativePath !== ".." &&
+      !relativePath.startsWith(`..${sep}`) &&
+      !isAbsolute(relativePath))
+  );
 }
 
 /**
@@ -124,9 +156,12 @@ function resolveTrackerLockDir(envValue, lockKey) {
 
   const candidate = resolve(envValue);
   const parentDir = dirname(candidate);
-  const canonicalParent = existsSync(parentDir) ? realpathSync(parentDir) : resolve(parentDir);
+  const canonicalParent = existsSync(parentDir)
+    ? realpathSync(parentDir)
+    : resolve(parentDir);
   if (!pathIsInside(canonicalParent, tmpRoot)) return fallback;
-  if (!basename(candidate).startsWith('career-ops-merge-tracker-')) return fallback;
+  if (!basename(candidate).startsWith("career-ops-merge-tracker-"))
+    return fallback;
   return candidate;
 }
 
@@ -144,7 +179,7 @@ function resolveTrackerLockDir(envValue, lockKey) {
  * @returns {Promise<void>} Resolves after the requested delay.
  */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -164,7 +199,7 @@ function processIsAlive(pid) {
     process.kill(pid, 0);
     return true;
   } catch (err) {
-    return err?.code === 'EPERM';
+    return err?.code === "EPERM";
   }
 }
 
@@ -180,7 +215,7 @@ function processIsAlive(pid) {
  */
 function readLockOwner(lockDir) {
   try {
-    return JSON.parse(readFileSync(join(lockDir, 'owner.json'), 'utf-8'));
+    return JSON.parse(readFileSync(join(lockDir, "owner.json"), "utf-8"));
   } catch {
     return null;
   }
@@ -242,12 +277,19 @@ async function acquireTrackerLock(lockDir, options = {}) {
     attempts++;
     try {
       mkdirSync(lockDir);
-      writeFileSync(join(lockDir, 'owner.json'), JSON.stringify({
-        pid: process.pid,
-        token,
-        started_at: new Date().toISOString(),
-        tracker: APPS_FILE,
-      }, null, 2));
+      writeFileSync(
+        join(lockDir, "owner.json"),
+        JSON.stringify(
+          {
+            pid: process.pid,
+            token,
+            started_at: new Date().toISOString(),
+            tracker: APPS_FILE,
+          },
+          null,
+          2,
+        ),
+      );
 
       let released = false;
       return {
@@ -264,14 +306,14 @@ async function acquireTrackerLock(lockDir, options = {}) {
         },
       };
     } catch (err) {
-      if (err?.code !== 'EEXIST') throw err;
+      if (err?.code !== "EEXIST") throw err;
 
       let hasRecoverGuard = false;
       try {
         mkdirSync(recoverGuardDir);
         hasRecoverGuard = true;
       } catch (guardErr) {
-        if (guardErr?.code !== 'EEXIST') throw guardErr;
+        if (guardErr?.code !== "EEXIST") throw guardErr;
       }
 
       if (hasRecoverGuard) {
@@ -306,7 +348,10 @@ async function acquireTrackerLock(lockDir, options = {}) {
  * @returns {void}
  */
 function writeFileAtomic(path, content) {
-  const tmpPath = join(dirname(path), `.${basename(path)}.${process.pid}.${Date.now()}.${randomUUID()}.tmp`);
+  const tmpPath = join(
+    dirname(path),
+    `.${basename(path)}.${process.pid}.${Date.now()}.${randomUUID()}.tmp`,
+  );
   try {
     writeFileSync(tmpPath, content);
     renameSync(tmpPath, path);
@@ -321,11 +366,14 @@ try {
   trackerLock = await acquireTrackerLock(TRACKER_LOCK_DIR, {
     timeoutMs: Number(process.env.CAREER_OPS_TRACKER_LOCK_TIMEOUT_MS) || 60_000,
     retryMs: Number(process.env.CAREER_OPS_TRACKER_LOCK_RETRY_MS) || 75,
-    staleMs: Number(process.env.CAREER_OPS_TRACKER_LOCK_STALE_MS) || 10 * 60_000,
+    staleMs:
+      Number(process.env.CAREER_OPS_TRACKER_LOCK_STALE_MS) || 10 * 60_000,
   });
-  process.once('exit', () => trackerLock?.release());
+  process.once("exit", () => trackerLock?.release());
   if (trackerLock.waitMs > 0 || trackerLock.staleRecovered) {
-    console.log(`🔒 已获取追踪器合并锁 (wait_ms=${trackerLock.waitMs} | attempts=${trackerLock.attempts} | stale_recovered=${trackerLock.staleRecovered})`);
+    console.log(
+      `🔒 已获取追踪器合并锁 (wait_ms=${trackerLock.waitMs} | attempts=${trackerLock.attempts} | stale_recovered=${trackerLock.staleRecovered})`,
+    );
   }
 } catch (err) {
   console.error(`❌ ${err.message}`);
@@ -333,7 +381,16 @@ try {
 }
 
 // Canonical states and aliases
-const CANONICAL_STATES = ['Evaluated', 'Applied', 'Responded', 'Interview', 'Offer', 'Rejected', 'Discarded', 'SKIP'];
+const CANONICAL_STATES = [
+  "Evaluated",
+  "Applied",
+  "Responded",
+  "Interview",
+  "Offer",
+  "Rejected",
+  "Discarded",
+  "SKIP",
+];
 
 /**
  * Convert raw addition status text into one canonical tracker state.
@@ -347,7 +404,10 @@ const CANONICAL_STATES = ['Evaluated', 'Applied', 'Responded', 'Interview', 'Off
  * @returns {string} Canonical tracker status.
  */
 function validateStatus(status) {
-  const clean = status.replace(/\*\*/g, '').replace(/\s+\d{4}-\d{2}-\d{2}.*$/, '').trim();
+  const clean = status
+    .replace(/\*\*/g, "")
+    .replace(/\s+\d{4}-\d{2}-\d{2}.*$/, "")
+    .trim();
   const lower = clean.toLowerCase();
 
   for (const valid of CANONICAL_STATES) {
@@ -357,33 +417,57 @@ function validateStatus(status) {
   // Aliases
   const aliases = {
     // Spanish → English
-    'evaluada': 'Evaluated', 'condicional': 'Evaluated', 'hold': 'Evaluated', 'evaluar': 'Evaluated', 'verificar': 'Evaluated',
-    'aplicado': 'Applied', 'enviada': 'Applied', 'aplicada': 'Applied', 'applied': 'Applied', 'sent': 'Applied',
-    'respondido': 'Responded',
-    'entrevista': 'Interview',
-    'oferta': 'Offer',
-    'rechazado': 'Rejected', 'rechazada': 'Rejected',
-    'descartado': 'Discarded', 'descartada': 'Discarded', 'cerrada': 'Discarded', 'cancelada': 'Discarded',
-    'no aplicar': 'SKIP', 'no_aplicar': 'SKIP', 'skip': 'SKIP', 'monitor': 'SKIP',
-    'geo blocker': 'SKIP',
+    evaluada: "Evaluated",
+    condicional: "Evaluated",
+    hold: "Evaluated",
+    evaluar: "Evaluated",
+    verificar: "Evaluated",
+    aplicado: "Applied",
+    enviada: "Applied",
+    aplicada: "Applied",
+    applied: "Applied",
+    sent: "Applied",
+    respondido: "Responded",
+    entrevista: "Interview",
+    oferta: "Offer",
+    rechazado: "Rejected",
+    rechazada: "Rejected",
+    descartado: "Discarded",
+    descartada: "Discarded",
+    cerrada: "Discarded",
+    cancelada: "Discarded",
+    "no aplicar": "SKIP",
+    no_aplicar: "SKIP",
+    skip: "SKIP",
+    monitor: "SKIP",
+    "geo blocker": "SKIP",
     // 中文别名 → English (与 states.yml 保持一致)
-    '已评估': 'Evaluated',
-    '已投递': 'Applied', '已提交': 'Applied',
-    '已回复': 'Responded',
-    '面试中': 'Interview', '面试': 'Interview',
-    '已录用': 'Offer', '录用': 'Offer', 'offer': 'Offer',
-    '已拒绝': 'Rejected', '拒绝': 'Rejected',
-    '已放弃': 'Discarded', '放弃': 'Discarded', '已关闭': 'Discarded',
-    '跳过': 'SKIP', '不投递': 'SKIP', '监控': 'SKIP',
+    已评估: "Evaluated",
+    已投递: "Applied",
+    已提交: "Applied",
+    已回复: "Responded",
+    面试中: "Interview",
+    面试: "Interview",
+    已录用: "Offer",
+    录用: "Offer",
+    offer: "Offer",
+    已拒绝: "Rejected",
+    拒绝: "Rejected",
+    已放弃: "Discarded",
+    放弃: "Discarded",
+    已关闭: "Discarded",
+    跳过: "SKIP",
+    不投递: "SKIP",
+    监控: "SKIP",
   };
 
   if (aliases[lower]) return aliases[lower];
 
   // DUPLICADO/Repost → Discarded
-  if (/^(duplicado|dup|repost)/i.test(lower)) return 'Discarded';
+  if (/^(duplicado|dup|repost)/i.test(lower)) return "Discarded";
 
   console.warn(`⚠️  非标准状态 "${status}" → 默认设为 "Evaluated"`);
-  return 'Evaluated';
+  return "Evaluated";
 }
 
 /**
@@ -398,7 +482,7 @@ function validateStatus(status) {
  * @returns {string} Lowercase alphanumeric company key.
  */
 function normalizeCompany(name) {
-  return name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+  return name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 }
 
 /**
@@ -427,7 +511,7 @@ function extractReportNum(reportStr) {
  * @returns {number} Parsed score, or 0 when no numeric value is present.
  */
 function parseScore(s) {
-  const m = s.replace(/\*\*/g, '').match(/([\d.]+)/);
+  const m = s.replace(/\*\*/g, "").match(/([\d.]+)/);
   return m ? parseFloat(m[1]) : 0;
 }
 
@@ -450,14 +534,17 @@ let COLMAP = LEGACY_COLMAP;
 // on the inner pipe. This is additive — normal cells are unchanged; only values
 // that would already break the table get sanitized (also keeps the web reader safe).
 function cell(v) {
-  return String(v ?? '').replace(/[\r\n]+/g, ' ').replace(/\s*\|\s*/g, ' / ').trim();
+  return String(v ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s*\|\s*/g, " / ")
+    .trim();
 }
 
 // Build a tracker row string matching the detected layout (with or without the
 // optional Location column) so writes round-trip through the same schema.
 function buildRow(o) {
   if (COLMAP.location != null) {
-    return `| ${o.num} | ${o.date} | ${cell(o.company)} | ${cell(o.role)} | ${cell(o.location) || '—'} | ${o.score} | ${o.status} | ${o.pdf} | ${o.report} | ${cell(o.notes)} |`;
+    return `| ${o.num} | ${o.date} | ${cell(o.company)} | ${cell(o.role)} | ${cell(o.location) || "—"} | ${o.score} | ${o.status} | ${o.pdf} | ${o.report} | ${cell(o.notes)} |`;
   }
   return `| ${o.num} | ${o.date} | ${cell(o.company)} | ${cell(o.role)} | ${o.score} | ${o.status} | ${o.pdf} | ${o.report} | ${cell(o.notes)} |`;
 }
@@ -473,7 +560,7 @@ function buildRow(o) {
  * @returns {object|null} Parsed tracker row, or null for non-data rows.
  */
 function parseAppLine(line) {
-  const parts = line.split('|').map(s => s.trim());
+  const parts = line.split("|").map((s) => s.trim());
   const maxIdx = Math.max(...Object.values(COLMAP));
   if (parts.length <= maxIdx) return null;
   const num = parseInt(parts[COLMAP.num]);
@@ -483,12 +570,12 @@ function parseAppLine(line) {
     date: parts[COLMAP.date],
     company: parts[COLMAP.company],
     role: parts[COLMAP.role],
-    location: COLMAP.location != null ? parts[COLMAP.location] : '',
+    location: COLMAP.location != null ? parts[COLMAP.location] : "",
     score: parts[COLMAP.score],
     status: parts[COLMAP.status],
     pdf: parts[COLMAP.pdf],
     report: parts[COLMAP.report],
-    notes: COLMAP.notes != null ? (parts[COLMAP.notes] || '') : '',
+    notes: COLMAP.notes != null ? parts[COLMAP.notes] || "" : "",
     raw: line,
   };
 }
@@ -513,10 +600,15 @@ function parseTsvContent(content, filename) {
   let addition;
 
   // Detect pipe-delimited (markdown table row)
-  if (content.startsWith('|')) {
-    parts = content.split('|').map(s => s.trim()).filter(Boolean);
+  if (content.startsWith("|")) {
+    parts = content
+      .split("|")
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (parts.length < 8) {
-      console.warn(`⚠️  跳过格式错误的管道分隔行 ${filename}：${parts.length} 个字段`);
+      console.warn(
+        `⚠️  跳过格式错误的管道分隔行 ${filename}：${parts.length} 个字段`,
+      );
       return null;
     }
     // Format: num | date | company | role | score | status | pdf | report | notes [| location]
@@ -529,14 +621,16 @@ function parseTsvContent(content, filename) {
       status: validateStatus(parts[5]),
       pdf: parts[6],
       report: parts[7],
-      notes: parts[8] || '',
-      location: (parts[9] || '').trim(),
+      notes: parts[8] || "",
+      location: (parts[9] || "").trim(),
     };
   } else {
     // Tab-separated
-    parts = content.split('\t');
+    parts = content.split("\t");
     if (parts.length < 8) {
-      console.warn(`⚠️  跳过格式错误的 TSV ${filename}：${parts.length} 个字段`);
+      console.warn(
+        `⚠️  跳过格式错误的 TSV ${filename}：${parts.length} 个字段`,
+      );
       return null;
     }
 
@@ -544,24 +638,36 @@ function parseTsvContent(content, filename) {
     // Heuristic: if col4 looks like a score and col5 looks like a status, they're swapped
     const col4 = parts[4].trim();
     const col5 = parts[5].trim();
-    const col4LooksLikeScore = /^\d+\.?\d*\/5$/.test(col4) || col4 === 'N/A' || col4 === 'DUP';
-    const col5LooksLikeScore = /^\d+\.?\d*\/5$/.test(col5) || col5 === 'N/A' || col5 === 'DUP';
-    const col4LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor|已评估|已投递|已提交|已回复|面试中|面试|已录用|录用|已拒绝|拒绝|已放弃|放弃|已关闭|跳过|不投递|监控)/i.test(col4);
-    const col5LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor|已评估|已投递|已提交|已回复|面试中|面试|已录用|录用|已拒绝|拒绝|已放弃|放弃|已关闭|跳过|不投递|监控)/i.test(col5);
+    const col4LooksLikeScore =
+      /^\d+\.?\d*\/5$/.test(col4) || col4 === "N/A" || col4 === "DUP";
+    const col5LooksLikeScore =
+      /^\d+\.?\d*\/5$/.test(col5) || col5 === "N/A" || col5 === "DUP";
+    const col4LooksLikeStatus =
+      /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor|已评估|已投递|已提交|已回复|面试中|面试|已录用|录用|已拒绝|拒绝|已放弃|放弃|已关闭|跳过|不投递|监控)/i.test(
+        col4,
+      );
+    const col5LooksLikeStatus =
+      /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor|已评估|已投递|已提交|已回复|面试中|面试|已录用|录用|已拒绝|拒绝|已放弃|放弃|已关闭|跳过|不投递|监控)/i.test(
+        col5,
+      );
 
     let statusCol, scoreCol;
     if (col4LooksLikeStatus && !col4LooksLikeScore) {
       // Standard format: col4=status, col5=score
-      statusCol = col4; scoreCol = col5;
+      statusCol = col4;
+      scoreCol = col5;
     } else if (col4LooksLikeScore && col5LooksLikeStatus) {
       // Swapped format: col4=score, col5=status
-      statusCol = col5; scoreCol = col4;
+      statusCol = col5;
+      scoreCol = col4;
     } else if (col5LooksLikeScore && !col4LooksLikeScore) {
       // col5 is definitely score → col4 must be status
-      statusCol = col4; scoreCol = col5;
+      statusCol = col4;
+      scoreCol = col5;
     } else {
       // Default: standard format (status before score)
-      statusCol = col4; scoreCol = col5;
+      statusCol = col4;
+      scoreCol = col5;
     }
 
     addition = {
@@ -573,9 +679,9 @@ function parseTsvContent(content, filename) {
       score: scoreCol,
       pdf: parts[6],
       report: parts[7],
-      notes: parts[8] || '',
+      notes: parts[8] || "",
       // Optional trailing field: tab-separated TSVs may append a location.
-      location: (parts[9] || '').trim(),
+      location: (parts[9] || "").trim(),
     };
   }
 
@@ -591,15 +697,15 @@ function parseTsvContent(content, filename) {
 
 // Read applications.md
 if (!existsSync(APPS_FILE)) {
-  console.log('未找到 applications.md，没有可合并的内容。');
+  console.log("未找到 applications.md，没有可合并的内容。");
   process.exit(0);
 }
-const appContent = readFileSync(APPS_FILE, 'utf-8');
+const appContent = readFileSync(APPS_FILE, "utf-8");
 // Test-only synchronization hook: the concurrent merge test waits for the
 // first worker to read the tracker while still holding the lock, then starts a
 // second worker to prove the lock prevents the old lost-update race.
-if (MERGE_READY_IPC && typeof process.send === 'function') {
-  process.send({ type: 'merge-tracker-ready' });
+if (MERGE_READY_IPC && typeof process.send === "function") {
+  process.send({ type: "merge-tracker-ready" });
 }
 if (MERGE_HOLD_MS > 0) {
   await sleep(MERGE_HOLD_MS);
@@ -609,31 +715,40 @@ if (MERGE_HOLD_MS > 0) {
 // to the tracker file's directory (see #760). Run with: node merge-tracker.mjs --migrate
 if (MIGRATE) {
   const migrated = appContent
-    .split('\n')
-    .map(line => (line.startsWith('|') ? normalizeReportLink(line) : line));
-  const before = appContent.split('\n');
+    .split("\n")
+    .map((line) => (line.startsWith("|") ? normalizeReportLink(line) : line));
+  const before = appContent.split("\n");
   const changed = migrated.filter((l, i) => l !== before[i]).length;
 
   if (DRY_RUN) {
-    console.log(`🔎 迁移（试运行）：将重写 ${basename(APPS_FILE)} 中的 ${changed} 行`);
+    console.log(
+      `🔎 迁移（试运行）：将重写 ${basename(APPS_FILE)} 中的 ${changed} 行`,
+    );
   } else {
-    writeFileAtomic(APPS_FILE, migrated.join('\n'));
-    console.log(`✅ 迁移完成：在 ${basename(APPS_FILE)} 中重写了 ${changed} 个报告链接（相对于 ${TRACKER_DIR === CAREER_OPS ? '仓库根目录' : 'data/'}）`);
+    writeFileAtomic(APPS_FILE, migrated.join("\n"));
+    console.log(
+      `✅ 迁移完成：在 ${basename(APPS_FILE)} 中重写了 ${changed} 个报告链接（相对于 ${TRACKER_DIR === CAREER_OPS ? "仓库根目录" : "data/"}）`,
+    );
   }
   process.exit(0);
 }
 
-const appLines = appContent.split('\n');
+const appLines = appContent.split("\n");
 // Detect the tracker's column layout via header names so parsing and writing
 // both work whether the table uses the original 9-column layout or a customized
 // one (e.g. with a Location column after Role). Falls back to the legacy layout.
 COLMAP = detectColumns(appLines) || LEGACY_COLMAP;
-if (COLMAP.location != null) console.log('🧭 检测到 Location 列。');
+if (COLMAP.location != null) console.log("🧭 检测到 Location 列。");
 const existingApps = [];
 let maxNum = 0;
 
 for (const line of appLines) {
-  if (line.startsWith('|') && !line.includes('---') && !line.includes('Empresa') && !line.includes('公司')) {
+  if (
+    line.startsWith("|") &&
+    !line.includes("---") &&
+    !line.includes("Empresa") &&
+    !line.includes("公司")
+  ) {
     const app = parseAppLine(line);
     if (app) {
       existingApps.push(app);
@@ -646,20 +761,20 @@ console.log(`📊 现有：${existingApps.length} 条记录，最大编号 #${ma
 
 // Read tracker additions
 if (!existsSync(ADDITIONS_DIR)) {
-  console.log('未找到 tracker-additions 目录。');
+  console.log("未找到 tracker-additions 目录。");
   process.exit(0);
 }
 
-const tsvFiles = readdirSync(ADDITIONS_DIR).filter(f => f.endsWith('.tsv'));
+const tsvFiles = readdirSync(ADDITIONS_DIR).filter((f) => f.endsWith(".tsv"));
 if (tsvFiles.length === 0) {
-  console.log('✅ 无待合并的新增记录。');
+  console.log("✅ 无待合并的新增记录。");
   process.exit(0);
 }
 
 // Sort files numerically for deterministic processing
 tsvFiles.sort((a, b) => {
-  const numA = parseInt(a.replace(/\D/g, '')) || 0;
-  const numB = parseInt(b.replace(/\D/g, '')) || 0;
+  const numA = parseInt(a.replace(/\D/g, "")) || 0;
+  const numB = parseInt(b.replace(/\D/g, "")) || 0;
   return numA - numB;
 });
 
@@ -671,9 +786,12 @@ let skipped = 0;
 const newLines = [];
 
 for (const file of tsvFiles) {
-  const content = readFileSync(join(ADDITIONS_DIR, file), 'utf-8').trim();
+  const content = readFileSync(join(ADDITIONS_DIR, file), "utf-8").trim();
   const addition = parseTsvContent(content, file);
-  if (!addition) { skipped++; continue; }
+  if (!addition) {
+    skipped++;
+    continue;
+  }
 
   // Normalize the report link to be relative to the tracker file's directory.
   // The TSV convention carries a root-relative `reports/...` link; rewrite it
@@ -693,9 +811,12 @@ for (const file of tsvFiles) {
     // Without the company guard, a NewCo TSV with report [1] silently overwrites
     // the existing tracker row [1] belonging to an unrelated company.
     const normCompany = normalizeCompany(addition.company);
-    duplicate = existingApps.find(app => {
+    duplicate = existingApps.find((app) => {
       const existingReportNum = extractReportNum(app.report);
-      return existingReportNum === reportNum && normalizeCompany(app.company) === normCompany;
+      return (
+        existingReportNum === reportNum &&
+        normalizeCompany(app.company) === normCompany
+      );
     });
   }
 
@@ -707,15 +828,17 @@ for (const file of tsvFiles) {
     // *different* companies is that drift, not a duplicate — matching on num
     // alone silently merges a brand-new role into an unrelated existing row.
     const normCompany = normalizeCompany(addition.company);
-    duplicate = existingApps.find(app =>
-      app.num === addition.num && normalizeCompany(app.company) === normCompany
+    duplicate = existingApps.find(
+      (app) =>
+        app.num === addition.num &&
+        normalizeCompany(app.company) === normCompany,
     );
   }
 
   if (!duplicate) {
     // Company + role fuzzy match
     const normCompany = normalizeCompany(addition.company);
-    duplicate = existingApps.find(app => {
+    duplicate = existingApps.find((app) => {
       if (normalizeCompany(app.company) !== normCompany) return false;
       return roleFuzzyMatch(addition.role, app.role);
     });
@@ -726,13 +849,20 @@ for (const file of tsvFiles) {
     const oldScore = parseScore(duplicate.score);
 
     if (newScore > oldScore) {
-      console.log(`🔄 更新：#${duplicate.num} ${addition.company} — ${addition.role} (${oldScore}→${newScore})`);
+      console.log(
+        `🔄 更新：#${duplicate.num} ${addition.company} — ${addition.role} (${oldScore}→${newScore})`,
+      );
       const lineIdx = appLines.indexOf(duplicate.raw);
       if (lineIdx >= 0) {
         const updatedLine = buildRow({
-          num: duplicate.num, date: addition.date, company: addition.company, role: addition.role,
-          location: addition.location || duplicate.location || '—',
-          score: addition.score, status: duplicate.status, pdf: duplicate.pdf,
+          num: duplicate.num,
+          date: addition.date,
+          company: addition.company,
+          role: addition.role,
+          location: addition.location || duplicate.location || "—",
+          score: addition.score,
+          status: duplicate.status,
+          pdf: duplicate.pdf,
           report: addition.report,
           notes: `重新评估 ${addition.date} (${oldScore}→${newScore}). ${addition.notes}`,
         });
@@ -740,7 +870,9 @@ for (const file of tsvFiles) {
         updated++;
       }
     } else {
-      console.log(`⏭️  跳过：${addition.company} — ${addition.role}（现有 #${duplicate.num} ${oldScore} >= 新 ${newScore}）`);
+      console.log(
+        `⏭️  跳过：${addition.company} — ${addition.role}（现有 #${duplicate.num} ${oldScore} >= 新 ${newScore}）`,
+      );
       skipped++;
     }
   } else {
@@ -749,14 +881,22 @@ for (const file of tsvFiles) {
     if (addition.num > maxNum) maxNum = addition.num;
 
     const newLine = buildRow({
-      num: entryNum, date: addition.date, company: addition.company, role: addition.role,
-      location: addition.location || '—',
-      score: addition.score, status: addition.status, pdf: addition.pdf,
-      report: addition.report, notes: addition.notes,
+      num: entryNum,
+      date: addition.date,
+      company: addition.company,
+      role: addition.role,
+      location: addition.location || "—",
+      score: addition.score,
+      status: addition.status,
+      pdf: addition.pdf,
+      report: addition.report,
+      notes: addition.notes,
     });
     newLines.push(newLine);
     added++;
-    console.log(`➕ 添加 #${entryNum}：${addition.company} — ${addition.role} (${addition.score})`);
+    console.log(
+      `➕ 添加 #${entryNum}：${addition.company} — ${addition.role} (${addition.score})`,
+    );
   }
 }
 
@@ -765,7 +905,7 @@ if (newLines.length > 0) {
   // Find header separator (|---|...) and insert after it
   let insertIdx = -1;
   for (let i = 0; i < appLines.length; i++) {
-    if (appLines[i].includes('---') && appLines[i].startsWith('|')) {
+    if (appLines[i].includes("---") && appLines[i].startsWith("|")) {
       insertIdx = i + 1;
       break;
     }
@@ -777,7 +917,7 @@ if (newLines.length > 0) {
 
 // Write back
 if (!DRY_RUN) {
-  writeFileAtomic(APPS_FILE, appLines.join('\n'));
+  writeFileAtomic(APPS_FILE, appLines.join("\n"));
 
   // Move processed files to merged/
   if (!existsSync(MERGED_DIR)) mkdirSync(MERGED_DIR, { recursive: true });
@@ -788,14 +928,16 @@ if (!DRY_RUN) {
 }
 
 console.log(`\n📊 汇总：+${added} 新增，🔄${updated} 更新，⏭️${skipped} 跳过`);
-if (DRY_RUN) console.log('（试运行 — 未写入更改）');
+if (DRY_RUN) console.log("（试运行 — 未写入更改）");
 trackerLock.release();
 
 // Optional verify
 if (VERIFY && !DRY_RUN) {
-  console.log('\n--- 正在运行验证 ---');
+  console.log("\n--- 正在运行验证 ---");
   try {
-    execFileSync('node', [join(CAREER_OPS, 'verify-pipeline.mjs')], { stdio: 'inherit' });
+    execFileSync("node", [join(CAREER_OPS, "scripts", "verify-pipeline.mjs")], {
+      stdio: "inherit",
+    });
   } catch (e) {
     process.exit(1);
   }

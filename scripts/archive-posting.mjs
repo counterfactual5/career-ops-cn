@@ -16,21 +16,21 @@
  * Reference: local:jds/YYYY-MM-DD_company-slug_role-slug.pdf  (paste into pipeline.md)
  */
 
-import { chromium } from 'playwright';
-import { writeFile, readFile } from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { chromium } from "playwright";
+import { writeFile, readFile } from "fs/promises";
+import { existsSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
-const JDS_DIR = join(ROOT, 'jds');
-const PIPELINE_PATH = join(ROOT, 'data', 'pipeline.md');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const JDS_DIR = join(ROOT, "jds");
+const PIPELINE_PATH = join(ROOT, "data", "pipeline.md");
 
 // ── CLI parsing ──────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
 
-if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
   console.log(`
 ╔══════════════════════════════════════════════════════════════════╗
 ║           career-ops — Job Posting Archiver                     ║
@@ -74,25 +74,25 @@ let dryRun = false;
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
-  if (arg === '--pipeline') {
+  if (arg === "--pipeline") {
     pipelineMode = true;
-  } else if (arg === '--dry-run') {
+  } else if (arg === "--dry-run") {
     dryRun = true;
-  } else if (arg.startsWith('--company=')) {
-    overrideCompany = arg.slice('--company='.length).trim();
-  } else if (arg === '--company' && args[i + 1]) {
+  } else if (arg.startsWith("--company=")) {
+    overrideCompany = arg.slice("--company=".length).trim();
+  } else if (arg === "--company" && args[i + 1]) {
     overrideCompany = args[++i].trim();
-  } else if (arg.startsWith('--role=')) {
-    overrideRole = arg.slice('--role='.length).trim();
-  } else if (arg === '--role' && args[i + 1]) {
+  } else if (arg.startsWith("--role=")) {
+    overrideRole = arg.slice("--role=".length).trim();
+  } else if (arg === "--role" && args[i + 1]) {
     overrideRole = args[++i].trim();
-  } else if (!arg.startsWith('--') && !targetUrl) {
+  } else if (!arg.startsWith("--") && !targetUrl) {
     targetUrl = arg;
   }
 }
 
 if (!pipelineMode && !targetUrl) {
-  console.error('No URL provided. Run with --help for usage.');
+  console.error("No URL provided. Run with --help for usage.");
   process.exit(1);
 }
 
@@ -101,14 +101,14 @@ if (!pipelineMode && !targetUrl) {
 function slugify(text) {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .slice(0, 60);
 }
 
 function today() {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 /**
@@ -123,7 +123,10 @@ function parsePageTitle(title) {
 
   // Strip common ATS platform suffixes
   const cleaned = title
-    .replace(/\s*[|–-]\s*(greenhouse|lever|ashby|workday|linkedin|indeed|wellfound|angellist)\s*$/i, '')
+    .replace(
+      /\s*[|–-]\s*(greenhouse|lever|ashby|workday|linkedin|indeed|wellfound|angellist)\s*$/i,
+      "",
+    )
     .trim();
 
   // "Role at Company"
@@ -135,7 +138,8 @@ function parsePageTitle(title) {
   if (pipeMatch) {
     const left = pipeMatch[1].trim();
     const right = pipeMatch[2].trim();
-    const roleKeywords = /engineer|manager|director|analyst|scientist|designer|developer|lead|head|vp|president|officer|specialist|architect/i;
+    const roleKeywords =
+      /engineer|manager|director|analyst|scientist|designer|developer|lead|head|vp|president|officer|specialist|architect/i;
     if (roleKeywords.test(right)) return { company: left, role: right };
     if (roleKeywords.test(left)) return { role: left, company: right };
     return { company: left, role: right };
@@ -143,7 +147,8 @@ function parsePageTitle(title) {
 
   // "Role - Company"
   const dashMatch = cleaned.match(/^(.+?)\s+-\s+(.+)$/);
-  if (dashMatch) return { role: dashMatch[1].trim(), company: dashMatch[2].trim() };
+  if (dashMatch)
+    return { role: dashMatch[1].trim(), company: dashMatch[2].trim() };
 
   return { company: null, role: cleaned };
 }
@@ -155,11 +160,11 @@ function parsePageTitle(title) {
 function extractCompanyFromUrl(url) {
   try {
     const { hostname, pathname } = new URL(url);
-    const parts = pathname.split('/').filter(Boolean);
-    if (hostname === 'boards.greenhouse.io') return parts[0] || null;
-    if (hostname === 'jobs.lever.co') return parts[0] || null;
-    if (hostname === 'jobs.ashbyhq.com') return parts[0] || null;
-    if (hostname === 'app.dover.io') return parts[0] || null;
+    const parts = pathname.split("/").filter(Boolean);
+    if (hostname === "boards.greenhouse.io") return parts[0] || null;
+    if (hostname === "jobs.lever.co") return parts[0] || null;
+    if (hostname === "jobs.ashbyhq.com") return parts[0] || null;
+    if (hostname === "app.dover.io") return parts[0] || null;
     return null;
   } catch {
     return null;
@@ -176,21 +181,21 @@ function extractCompanyFromUrl(url) {
  */
 async function extractPipelineEntries() {
   if (!existsSync(PIPELINE_PATH)) {
-    console.error('data/pipeline.md not found. Add URLs there first.');
+    console.error("data/pipeline.md not found. Add URLs there first.");
     process.exit(1);
   }
 
-  const content = await readFile(PIPELINE_PATH, 'utf-8');
+  const content = await readFile(PIPELINE_PATH, "utf-8");
   const entries = [];
 
-  for (const line of content.split('\n')) {
-    if (!line.startsWith('- [ ]')) continue;
+  for (const line of content.split("\n")) {
+    if (!line.startsWith("- [ ]")) continue;
 
     const urlMatch = line.match(/https?:\/\/[^\s|)]+/);
     if (!urlMatch) continue;
 
     const url = urlMatch[0];
-    const parts = line.split('|').map(s => s.trim());
+    const parts = line.split("|").map((s) => s.trim());
     const company = parts[1] || null;
     const role = parts[2] || null;
 
@@ -202,31 +207,50 @@ async function extractPipelineEntries() {
 
 // ── Core archive function ────────────────────────────────────────────────────
 
-async function archiveUrl(browser, url, { company: companyHint, role: roleHint } = {}) {
+async function archiveUrl(
+  browser,
+  url,
+  { company: companyHint, role: roleHint } = {},
+) {
   console.log(`\n🔗  ${url}`);
 
   const page = await browser.newPage();
 
   try {
-    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const response = await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
     const httpStatus = response?.status() ?? 0;
 
     // Give SPAs (Ashby, Lever, Workday) time to hydrate
     await page.waitForTimeout(2000);
 
     const pageTitle = await page.title();
-    const h1Text = await page.$eval('h1', el => el.innerText.trim()).catch(() => '');
+    const h1Text = await page
+      .$eval("h1", (el) => el.innerText.trim())
+      .catch(() => "");
     const urlCompany = extractCompanyFromUrl(url);
 
     // Parse page title first — it usually has "Role | Company" or "Company | Role".
     // Fall back to h1 for the role when the page title doesn't yield one cleanly.
     const detected = parsePageTitle(pageTitle);
-    const resolvedCompany = overrideCompany || companyHint || detected.company || urlCompany || 'unknown';
-    const resolvedRole = overrideRole || roleHint || detected.role || h1Text || 'job';
+    const resolvedCompany =
+      overrideCompany ||
+      companyHint ||
+      detected.company ||
+      urlCompany ||
+      "unknown";
+    const resolvedRole =
+      overrideRole || roleHint || detected.role || h1Text || "job";
 
     // Strip noisy prefixes common on Greenhouse/Lever ("Job Application for …")
-    const company = resolvedCompany.replace(/^job\s+application\s+for\s+/i, '').trim();
-    const role = resolvedRole.replace(/^job\s+application\s+for\s+/i, '').trim();
+    const company = resolvedCompany
+      .replace(/^job\s+application\s+for\s+/i, "")
+      .trim();
+    const role = resolvedRole
+      .replace(/^job\s+application\s+for\s+/i, "")
+      .trim();
 
     console.log(`   Company: ${company}`);
     console.log(`   Role:    ${role}`);
@@ -243,9 +267,9 @@ async function archiveUrl(browser, url, { company: companyHint, role: roleHint }
     mkdirSync(JDS_DIR, { recursive: true });
 
     const pdfBuffer = await page.pdf({
-      format: 'a4',
+      format: "a4",
       printBackground: true,
-      margin: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' },
+      margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
       preferCSSPageSize: false,
     });
 
@@ -256,7 +280,6 @@ async function archiveUrl(browser, url, { company: companyHint, role: roleHint }
     console.log(`Reference: ${reference}`);
 
     return { filename, reference, url, size: pdfBuffer.length };
-
   } finally {
     await page.close();
   }
@@ -270,7 +293,7 @@ async function main() {
   if (pipelineMode) {
     const entries = await extractPipelineEntries();
     if (entries.length === 0) {
-      console.log('No pending (- [ ]) URLs found in data/pipeline.md.');
+      console.log("No pending (- [ ]) URLs found in data/pipeline.md.");
       return;
     }
     targets = entries;
@@ -278,7 +301,7 @@ async function main() {
     targets = [{ url: targetUrl, company: null, role: null }];
   }
 
-  if (dryRun) console.log('🔍  Dry-run mode — no files will be saved.\n');
+  if (dryRun) console.log("🔍  Dry-run mode — no files will be saved.\n");
 
   console.log(`Archiving ${targets.length} posting(s) to jds/`);
 
@@ -289,15 +312,16 @@ async function main() {
     // Dry-run: no browser needed — use URL-based detection only
     for (const { url, company, role } of targets) {
       const urlCompany = extractCompanyFromUrl(url);
-      const resolvedCompany = overrideCompany || company || urlCompany || 'unknown';
-      const resolvedRole = overrideRole || role || 'job';
+      const resolvedCompany =
+        overrideCompany || company || urlCompany || "unknown";
+      const resolvedRole = overrideRole || role || "job";
       const filename = `${today()}_${slugify(resolvedCompany)}_${slugify(resolvedRole)}.pdf`;
       const reference = `local:jds/${filename}`;
       console.log(`\n🔗  ${url}`);
       console.log(`   Company: ${resolvedCompany}`);
       console.log(`   Role:    ${resolvedRole}`);
       console.log(`   Output:  jds/${filename}`);
-      console.log('   (dry-run — not saved)');
+      console.log("   (dry-run — not saved)");
       results.push({ url, filename, reference, skipped: true });
     }
   } else {
@@ -309,7 +333,7 @@ async function main() {
           const result = await archiveUrl(browser, url, { company, role });
           results.push(result);
         } catch (err) {
-          console.error(`   ❌  Failed: ${err.message.split('\n')[0]}`);
+          console.error(`   ❌  Failed: ${err.message.split("\n")[0]}`);
           results.push({ url, error: err.message });
           failed++;
         }
@@ -320,29 +344,29 @@ async function main() {
   }
 
   // Summary
-  const saved = results.filter(r => !r.error && !r.skipped).length;
-  const skipped = results.filter(r => r.skipped).length;
+  const saved = results.filter((r) => !r.error && !r.skipped).length;
+  const skipped = results.filter((r) => r.skipped).length;
 
-  console.log('\n' + '─'.repeat(62));
+  console.log("\n" + "─".repeat(62));
   if (dryRun) {
     console.log(`  Dry-run: ${skipped} file(s) would be saved to jds/`);
   } else {
     console.log(`  Archived: ${saved} saved  ${failed} failed`);
   }
 
-  const references = results.filter(r => r.reference);
+  const references = results.filter((r) => r.reference);
   if (references.length > 0) {
-    console.log('\n  References (paste into pipeline.md or a report header):');
+    console.log("\n  References (paste into pipeline.md or a report header):");
     for (const r of references) {
       console.log(`    ${r.reference}`);
     }
   }
-  console.log('─'.repeat(62) + '\n');
+  console.log("─".repeat(62) + "\n");
 
   if (failed > 0) process.exit(1);
 }
 
-main().catch(err => {
-  console.error('❌  Fatal:', err.message);
+main().catch((err) => {
+  console.error("❌  Fatal:", err.message);
   process.exit(1);
 });

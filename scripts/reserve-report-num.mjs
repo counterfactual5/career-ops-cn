@@ -36,12 +36,19 @@
  * The script exits with code 0 on success, non-zero on fatal error.
  */
 
-import { readdirSync, writeFileSync, unlinkSync, statSync, existsSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import {
+  readdirSync,
+  writeFileSync,
+  unlinkSync,
+  statSync,
+  existsSync,
+  mkdirSync,
+} from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPORTS_DIR = join(__dirname, 'reports');
+const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..");
+const REPORTS_DIR = join(__dirname, "reports");
 
 // Sentinels older than this are considered stale and may be GC'd.
 // 4 hours covers any reasonable interactive or batch session.
@@ -54,7 +61,7 @@ const MAX_RETRIES = 50;
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 function pad(n) {
-  return String(n).padStart(3, '0');
+  return String(n).padStart(3, "0");
 }
 
 /** Return the highest numeric slot currently taken in reports/ (files + sentinels). */
@@ -74,17 +81,19 @@ function claimSlot(n) {
   // Check if any file (real report or sentinel) already occupies this slot
   if (existsSync(REPORTS_DIR)) {
     const prefix = `${pad(n)}-`;
-    const alreadyExists = readdirSync(REPORTS_DIR).some(name => name.startsWith(prefix));
+    const alreadyExists = readdirSync(REPORTS_DIR).some((name) =>
+      name.startsWith(prefix),
+    );
     if (alreadyExists) return false;
   }
 
   const sentinel = join(REPORTS_DIR, `${pad(n)}-RESERVED.md`);
   try {
     // 'wx' = O_CREAT | O_EXCL — fails if file already exists.
-    writeFileSync(sentinel, '', { flag: 'wx' });
+    writeFileSync(sentinel, "", { flag: "wx" });
     return true;
   } catch (err) {
-    if (err.code === 'EEXIST') return false; // another process beat us
+    if (err.code === "EEXIST") return false; // another process beat us
     throw err; // unexpected FS error
   }
 }
@@ -101,7 +110,7 @@ function gc() {
   const now = Date.now();
   let removed = 0;
   for (const name of readdirSync(REPORTS_DIR)) {
-    if (!name.endsWith('-RESERVED.md')) continue;
+    if (!name.endsWith("-RESERVED.md")) continue;
     const full = join(REPORTS_DIR, name);
     try {
       const { mtimeMs } = statSync(full);
@@ -115,24 +124,28 @@ function gc() {
     }
   }
   if (removed > 0) {
-    process.stderr.write(`reserve-report-num: removed ${removed} stale sentinel(s)\n`);
+    process.stderr.write(
+      `reserve-report-num: removed ${removed} stale sentinel(s)\n`,
+    );
   }
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
-const [,, cmd, arg] = process.argv;
+const [, , cmd, arg] = process.argv;
 
-if (cmd === '--release') {
+if (cmd === "--release") {
   if (!arg || !/^\d{1,3}$/.test(arg)) {
-    process.stderr.write('Usage: node reserve-report-num.mjs --release <NNN>\n');
+    process.stderr.write(
+      "Usage: node reserve-report-num.mjs --release <NNN>\n",
+    );
     process.exit(1);
   }
   releaseSlot(parseInt(arg, 10));
   process.exit(0);
 }
 
-if (cmd === '--gc') {
+if (cmd === "--gc") {
   gc();
   process.exit(0);
 }
@@ -145,7 +158,7 @@ let tries = 0;
 
 while (tries < MAX_RETRIES) {
   if (claimSlot(candidate)) {
-    process.stdout.write(pad(candidate) + '\n');
+    process.stdout.write(pad(candidate) + "\n");
     process.exit(0);
   }
   // Slot already taken (sentinel or real file appeared) — try next.
@@ -153,5 +166,7 @@ while (tries < MAX_RETRIES) {
   tries++;
 }
 
-process.stderr.write(`reserve-report-num: could not claim a slot after ${MAX_RETRIES} retries\n`);
+process.stderr.write(
+  `reserve-report-num: could not claim a slot after ${MAX_RETRIES} retries\n`,
+);
 process.exit(1);

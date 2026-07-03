@@ -46,10 +46,15 @@ import {
 } from "fs";
 import { createHash } from "crypto";
 import { dirname, resolve, join, basename } from "path";
-import { pathToFileURL } from "url";
+import { pathToFileURL, fileURLToPath } from "url";
 import yaml from "js-yaml";
 
-const MD_PATH = process.env.CAREER_OPS_TRACKER || "data/applications.md";
+// 脚本位于 scripts/ 下，项目根是上一级目录
+const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+const MD_PATH =
+  process.env.CAREER_OPS_TRACKER ||
+  join(PROJECT_ROOT, "data", "applications.md");
 const DB_PATH =
   process.env.CAREER_OPS_TRACKER_DB ||
   (MD_PATH.endsWith(".md") ? MD_PATH.slice(0, -3) + ".db" : MD_PATH + ".db");
@@ -62,7 +67,7 @@ if (resolve(MD_PATH) === resolve(DB_PATH)) {
   );
   process.exit(1);
 }
-const STATES_PATH = "templates/states.yml";
+const STATES_PATH = join(PROJECT_ROOT, "templates", "states.yml");
 const HEADER =
   "| # | Date | Company | Role | Score | Status | PDF | Report | Notes |";
 const SEPARATOR =
@@ -422,9 +427,7 @@ async function sync(args) {
 // the last sync (or was never synced), rebuild the index first.
 function ensureFresh(db, states) {
   if (!existsSync(MD_PATH)) {
-    console.error(
-      `错误：${MD_PATH} 未找到 — 索引没有数据源可读取。`,
-    );
+    console.error(`错误：${MD_PATH} 未找到 — 索引没有数据源可读取。`);
     process.exit(1);
   }
   const synced = db

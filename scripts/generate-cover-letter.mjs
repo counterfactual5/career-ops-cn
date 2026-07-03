@@ -18,11 +18,14 @@ import { dirname, resolve, basename, join } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { parseArgs } from "util";
 
-const OUTPUT_ROOT = resolve("output");
+const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const OUTPUT_ROOT = resolve(PROJECT_ROOT, "output");
 
 function safeOutputPath(raw) {
   // Derive a sanitized filename from raw string (strip path separators and dots)
-  const filename = basename(raw).replace(/[^a-zA-Z0-9._-]/g, "-").replace(/\.{2,}/g, "-");
+  const filename = basename(raw)
+    .replace(/[^\p{L}\p{N}._-]/gu, "-")
+    .replace(/\.{2,}/g, "-");
   return join(OUTPUT_ROOT, filename);
 }
 
@@ -57,11 +60,15 @@ function buildContactLine(candidate) {
   }
   if (candidate.phone) parts.push(escapeHtml(candidate.phone));
   if (candidate.linkedin) {
-    parts.push(`<a href="${escapeHtml(asUrl(candidate.linkedin))}">LinkedIn</a>`);
+    parts.push(
+      `<a href="${escapeHtml(asUrl(candidate.linkedin))}">LinkedIn</a>`,
+    );
   }
   if (candidate.github) {
     const display = candidate.github.replace(/^https?:\/\//, "");
-    parts.push(`<a href="${escapeHtml(asUrl(candidate.github))}">${escapeHtml(display)}</a>`);
+    parts.push(
+      `<a href="${escapeHtml(asUrl(candidate.github))}">${escapeHtml(display)}</a>`,
+    );
   }
   return parts.join(" &nbsp;|&nbsp; ");
 }
@@ -73,33 +80,39 @@ function buildCredentialsBlock(candidate) {
 }
 
 function buildDateline(letter) {
-  const parts = [letter.company, letter.city, letter.date].filter(Boolean).map(escapeHtml);
+  const parts = [letter.company, letter.city, letter.date]
+    .filter(Boolean)
+    .map(escapeHtml);
   return parts.join(" &nbsp;&nbsp; ");
 }
 
 function buildAchievementsBlock(achievements) {
   if (!achievements || !achievements.length) return "";
-  const items = achievements.map(ach => {
-    const lead = escapeHtml(ach.lead || "");
-    const impact = escapeHtml(ach.impact || "");
-    return `    <li><b>${lead},</b> ${impact}</li>`;
-  }).join("\n");
+  const items = achievements
+    .map((ach) => {
+      const lead = escapeHtml(ach.lead || "");
+      const impact = escapeHtml(ach.impact || "");
+      return `    <li><b>${lead},</b> ${impact}</li>`;
+    })
+    .join("\n");
   return `<ul class="achievements">\n${items}\n  </ul>`;
 }
 
 function buildFootnotesBlock(footnotes) {
   if (!footnotes || !footnotes.length) return "";
-  const lines = footnotes.map(fn => {
-    if (typeof fn === "object" && fn !== null) {
-      const marker = escapeHtml(fn.marker || "");
-      const text = escapeHtml(fn.text || "");
-      const url = fn.url
-        ? ` <a href="${escapeHtml(fn.url)}">${escapeHtml(fn.url)}</a>`
-        : "";
-      return `    <p>${marker} ${text}${url}</p>`;
-    }
-    return `    <p>${escapeHtml(fn)}</p>`;
-  }).join("\n");
+  const lines = footnotes
+    .map((fn) => {
+      if (typeof fn === "object" && fn !== null) {
+        const marker = escapeHtml(fn.marker || "");
+        const text = escapeHtml(fn.text || "");
+        const url = fn.url
+          ? ` <a href="${escapeHtml(fn.url)}">${escapeHtml(fn.url)}</a>`
+          : "";
+        return `    <p>${marker} ${text}${url}</p>`;
+      }
+      return `    <p>${escapeHtml(fn)}</p>`;
+    })
+    .join("\n");
   return `<div class="footnotes">\n${lines}\n  </div>`;
 }
 
@@ -111,17 +124,28 @@ export function buildHtml(payload) {
   _require(letter, ["role_title", "opening", "profile_intro"], "letter");
 
   const scriptDir = dirname(fileURLToPath(import.meta.url));
-  const templatePath = resolve(scriptDir, "templates", "cover-letter-template.html");
+  const templatePath = resolve(
+    scriptDir,
+    "..",
+    "templates",
+    "cover-letter-template.html",
+  );
   let html = readFileSync(templatePath, "utf-8");
 
   // Optional salutation (e.g. "Dear Jane Smith,"). Omitted -> no salutation,
   // preserving the original behavior for payloads that don't set it.
-  const greetingBlock = letter.greeting ? `<p class="greeting">${escapeHtml(letter.greeting)}</p>` : "";
-  const closingBlock = letter.closing ? `<p>${escapeHtml(letter.closing)}</p>` : "";
+  const greetingBlock = letter.greeting
+    ? `<p class="greeting">${escapeHtml(letter.greeting)}</p>`
+    : "";
+  const closingBlock = letter.closing
+    ? `<p>${escapeHtml(letter.closing)}</p>`
+    : "";
   const languageClosingBlock = letter.language_closing
     ? `<p class="language-closing">${escapeHtml(letter.language_closing)}</p>`
     : "";
-  const problemsBlock = letter.problems_section ? `<p>${escapeHtml(letter.problems_section)}</p>` : "";
+  const problemsBlock = letter.problems_section
+    ? `<p>${escapeHtml(letter.problems_section)}</p>`
+    : "";
 
   const replacements = {
     "{{NAME}}": escapeHtml(candidate.name),
@@ -144,15 +168,18 @@ export function buildHtml(payload) {
   // split/join) ensures a substituted value that itself contains a {{TOKEN}}
   // sequence is left literal instead of being re-interpreted as a placeholder.
   // Tokens with no entry in the map are left untouched.
-  return html.replace(/\{\{[A-Z_]+\}\}/g, (token) => replacements[token] ?? token);
+  return html.replace(
+    /\{\{[A-Z_]+\}\}/g,
+    (token) => replacements[token] ?? token,
+  );
 }
 
 async function main() {
   const { values: args } = parseArgs({
     options: {
       payload: { type: "string" },
-      out:     { type: "string" },
-      help:    { type: "boolean", short: "h" },
+      out: { type: "string" },
+      help: { type: "boolean", short: "h" },
     },
     strict: false,
   });
@@ -181,8 +208,13 @@ Usage:
   }
 
   if (!payload.output_path) {
-    const company = (payload.letter?.company || "company").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-");
-    const role    = (payload.letter?.role_title || "role").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 30);
+    const company = (payload.letter?.company || "company")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "-");
+    const role = (payload.letter?.role_title || "role")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .slice(0, 30);
     payload.output_path = join(OUTPUT_ROOT, `${company}-${role}-cover.pdf`);
   } else {
     payload.output_path = safeOutputPath(payload.output_path);
@@ -205,5 +237,6 @@ Usage:
   }
 }
 
-const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+const isMain =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) main();
