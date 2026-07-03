@@ -1,0 +1,40 @@
+{
+  "name": "career-ops-cn",
+  "version": "0.1.0",
+  "description": "AI-powered job search assistant for China market — 面向中国市场的 AI 求职助手",
+  "private": true,
+  "scripts": {
+    "doctor": "node doctor.mjs",
+    "verify": "node verify-pipeline.mjs",
+    "merge": "node merge-tracker.mjs",
+    "reconcile": "node reconcile-pipeline.mjs",
+    "pdf": "node generate-pdf.mjs",
+    "cover-letter": "node generate-cover-letter.mjs --payload",
+    "sync-check": "node cv-sync-check.mjs",
+    "tracker": "node tracker.mjs",
+    "find": "node find.mjs",
+    "archive": "node archive-posting.mjs",
+    "prepare:application": "node prepare-application.mjs"
+  },
+  "keywords": [
+    "ai",
+    "job-search",
+    "career",
+    "career-ops",
+    "china",
+    "求职",
+    "招聘"
+  ],
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/counterfactual5/career-ops-cn"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.0.0",
+    "js-yaml": "^4.1.1",
+    "playwright": "1.61.1"
+  }
+}
