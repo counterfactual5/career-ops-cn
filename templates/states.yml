@@ -1,56 +1,60 @@
-# Career-Ops — Canonical States
-# Source of truth for career-ops (writer) and dashboard (reader).
-# Both systems MUST use these exact states.
+# Career-Ops-CN — 标准状态
+# career-ops-cn 的单一数据源（写入端和仪表板读取端）。
+# 两个系统必须使用这些精确状态。
 #
-# Rule: The status field in applications.md must contain EXACTLY
-# one of these values (case-insensitive). No markdown bold (**),
-# no dates, no extra text. Dates go in the date column.
+# 重要：label 字段是脚本契约，必须保持英文。
+# 脚本（merge-tracker.mjs / tracker.mjs）硬编码了这些字符串做匹配。
+# 中文说明放在 description；UI 展示时如需中文，请在前端做映射。
+#
+# 规则：applications.md 中的 status 字段必须恰好包含
+# 以下 label 之一（不区分大小写）。不要加 markdown 粗体（**），
+# 不要加日期，不要加额外文本。日期放在 date 列。
 
 states:
   - id: evaluated
     label: Evaluated
-    aliases: [evaluada]
-    description: Offer evaluated with report, pending decision
+    aliases: [evaluada, 已评估]
+    description: 已生成评估报告，等待决策
     dashboard_group: evaluated
 
   - id: applied
     label: Applied
-    aliases: [aplicado, enviada, aplicada, sent]
-    description: Application submitted
+    aliases: [aplicado, enviada, aplicada, sent, 已投递]
+    description: 申请已提交
     dashboard_group: applied
 
   - id: responded
     label: Responded
-    aliases: [respondido]
-    description: Company has responded (not yet interview)
+    aliases: [respondido, 已回复]
+    description: 公司已回复（尚未进入面试）
     dashboard_group: responded
 
   - id: interview
     label: Interview
-    aliases: [entrevista]
-    description: Active interview process
+    aliases: [entrevista, 面试中]
+    description: 正在进行面试流程
     dashboard_group: interview
 
   - id: offer
     label: Offer
-    aliases: [oferta]
-    description: Offer received
+    aliases: [oferta, 已录用]
+    description: 已收到录用通知
     dashboard_group: offer
 
   - id: rejected
     label: Rejected
-    aliases: [rechazado, rechazada]
-    description: Rejected by company
+    aliases: [rechazado, rechazada, 已拒绝]
+    description: 被公司拒绝
     dashboard_group: rejected
 
   - id: discarded
     label: Discarded
-    aliases: [descartado, descartada, cerrada, cancelada]
-    description: Discarded by candidate or offer closed
+    aliases: [descartado, descartada, cerrada, cancelada, 已放弃]
+    description: 候选人主动放弃或职位已关闭
     dashboard_group: discarded
 
   - id: skip
     label: SKIP
-    aliases: [no_aplicar, no aplicar, skip, monitor]
-    description: Doesn't fit, don't apply
+    aliases: [no_aplicar, "no aplicar", skip, monitor, 跳过]
+    description: 不匹配，不投递
     dashboard_group: skip

@@ -140,16 +140,16 @@ export function PipelineView({
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl tracking-tight text-landing">Pipeline</h1>
+          <h1 className="font-display text-2xl tracking-tight text-landing">待办</h1>
           <p className="mt-1 text-sm text-muted">
-            <span className="tabular-nums">{pendingInbox.length - processedCount}</span> in inbox
+            <span className="tabular-nums">{pendingInbox.length - processedCount}</span> 条待处理
             {processedCount > 0 && (
               <>
                 {" "}
-                · <span className="tabular-nums text-brand">{processedCount}</span> processed
+                · <span className="tabular-nums text-brand">{processedCount}</span> 条已处理
               </>
             )}{" "}
-            · <span className="tabular-nums">{applications.length}</span> tracked
+            · <span className="tabular-nums">{applications.length}</span> 条已追踪
           </p>
         </div>
         <div className="relative w-64 max-w-[40vw]">
@@ -157,7 +157,7 @@ export function PipelineView({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search company or role…"
+            placeholder="搜索公司或岗位…"
             className="w-full rounded-md border border-border bg-surface/60 py-2 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50 focus-visible:ring-2 focus-visible:ring-brand/40"
           />
         </div>
@@ -189,16 +189,16 @@ export function PipelineView({
         })}
       </div>
 
-      {tab !== "INBOX" && minFilter != null && (
+          {tab !== "INBOX" && minFilter != null && (
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-faint">Filtered:</span>
+          <span className="text-xs text-faint">已筛选：</span>
           <button
             type="button"
             onClick={() => setParams({ min: null })}
             className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft px-2.5 py-1 text-xs font-medium text-brand transition-colors hover:bg-brand/15"
-            title="Clear score filter"
+            title="清除评分筛选"
           >
-            score ≥ {minFilter.toFixed(1)}
+            评分 ≥ {minFilter.toFixed(1)}
             <X className="size-3" />
           </button>
         </div>
@@ -234,26 +234,26 @@ export function PipelineView({
                         href={`/jobs/${job.id}`}
                         className="inline-flex items-center gap-1.5 text-xs font-medium text-brand"
                       >
-                        <Loader2 className="size-3.5 animate-spin" /> Evaluating…
+                        <Loader2 className="size-3.5 animate-spin" /> 评估中…
                       </Link>
                     ) : job?.status === "done" ? (
                       <Link href={`/jobs/${job.id}`} className="inline-flex items-center gap-1.5 text-xs">
                         {job.result?.score != null && <Badge tone={job.result.tone}>{job.result.score}/5</Badge>}
-                        <span className="text-faint">processed</span>
+                        <span className="text-faint">已处理</span>
                       </Link>
                     ) : job?.status === "error" ? (
                       <button type="button" onClick={launch} className="text-xs text-red-400 transition-colors hover:underline">
-                        Retry
+                        重试
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={launch}
                         className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-brand"
-                        title="Evaluate this posting — spins up a worker on your CLI"
+                        title="评估此岗位 — 在你的 CLI 上启动 worker"
                       >
                         <Sparkles className="size-3.5" />
-                        <span className="hidden sm:inline">Evaluate</span>
+                        <span className="hidden sm:inline">评估</span>
                       </button>
                     )}
                     <a
@@ -261,7 +261,7 @@ export function PipelineView({
                       target="_blank"
                       rel="noreferrer"
                       className="rounded-md p-1 text-faint transition-colors hover:text-brand"
-                      aria-label={`Open ${j.company} posting`}
+                      aria-label={`打开 ${j.company} 的招聘页面`}
                     >
                       <ExternalLink className="size-4" />
                     </a>
@@ -322,8 +322,8 @@ export function PipelineView({
         </div>
       ) : (
         <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface/30 px-6 py-12 text-center">
-          <p className="font-display text-lg">No matches</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">Try a different tab or clear the search.</p>
+          <p className="font-display text-lg">无匹配结果</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">尝试切换标签或清除搜索。</p>
         </div>
       )}
     </div>
@@ -335,8 +335,8 @@ function InboxEmpty({ count, filtered }: { count: number; filtered: boolean }) {
   if (filtered) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface/30 px-6 py-12 text-center">
-        <p className="font-display text-lg">No matches</p>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-muted">Clear the search to see the full inbox.</p>
+        <p className="font-display text-lg">无匹配结果</p>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-muted">清除搜索以查看全部待办。</p>
       </div>
     );
   }
@@ -347,20 +347,20 @@ function InboxEmpty({ count, filtered }: { count: number; filtered: boolean }) {
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="size-2.5 rounded-full bg-foreground/15" aria-hidden="true" />
         <span className="ml-3 font-mono text-xs tracking-wide text-muted">
-          <span className="text-foreground/40">&gt;_</span> career-ops scan
+          <span className="text-foreground/40">&gt;_</span> career-ops-cn scan
         </span>
       </div>
       <div className="px-6 py-12 text-center">
         <p className="font-display text-lg">
-          Your <span className="text-brand">inbox</span> is empty.
+          你的 <span className="text-brand">待办</span> 是空的。
         </p>
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
           {count > 0
-            ? "Nothing pending right now."
-            : "Run a scan or drop job URLs into data/pipeline.md to fill it."}
+            ? "目前没有待处理事项。"
+            : "运行一次扫描，或将岗位链接放入 data/pipeline.md 来填充。"}
         </p>
         <p className="mt-4 font-mono text-xs text-faint">
-          $ career-ops scan
+          $ career-ops-cn scan
           <span
             aria-hidden="true"
             className="cli-cursor ml-0.5 inline-block h-[1em] w-[0.35em] bg-current align-middle"

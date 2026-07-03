@@ -1,64 +1,64 @@
-# Templates
+# 模板
 
-System-layer template files used by career-ops scripts and modes. These files are auto-updated when you run `npm run update` -- put user customizations in the user-layer files instead (see DATA_CONTRACT.md).
+career-ops-cn 脚本和模式使用的系统层模板文件。
 
-## Files
+## 文件
 
-| File | Used By | Purpose |
+| 文件 | 使用者 | 用途 |
 |------|---------|---------|
-| `cv-template.html` | `generate-pdf.mjs` | HTML/CSS template for ATS-optimized CV PDFs |
-| `resume-template.html` | `generate-pdf.mjs` (via `--template`) | Resume-branded variant of `cv-template.html`. Same layout and placeholder tokens; differs in: `<title>` reads "Resume" instead of "CV", omits Certifications section, targets 1–2 page US/industry format. See detailed section below. |
-| `cv-template.tex` | `generate-latex.mjs` | LaTeX/Overleaf template for ATS-optimized CV PDFs |
-| `portals.example.yml` | Onboarding | Example portal scanner configuration (copy to `portals.yml` to activate) |
-| `states.yml` | `verify-pipeline.mjs`, `normalize-statuses.mjs`, `merge-tracker.mjs` | Canonical application states and their aliases |
+| `cv-template.html` | `generate-pdf.mjs` | ATS 优化简历 PDF 的 HTML/CSS 模板 |
+| `resume-template.html` | `generate-pdf.mjs`（通过 `--template`） | `cv-template.html` 的简历变体。布局和占位符相同；差异：`<title>` 显示"Resume"而非"CV"，无证书部分，针对 1–2 页美国/行业格式 |
+| `cv-template.tex` | `generate-latex.mjs` | Overleaf 兼容的 ATS 优化简历 PDF 的 LaTeX 模板 |
+| `portals.example.yml` | 参考 | 示例门户配置（本项目不依赖扫描，仅作参考） |
+| `states.yml` | `verify-pipeline.mjs`、`merge-tracker.mjs`、`tracker.mjs` | 规范申请状态及其别名 |
 
 ### cv-template.html
 
-The HTML template rendered by Playwright into PDF. Uses placeholder tokens (`{{NAME}}`, `{{SUMMARY_TEXT}}`, `{{EXPERIENCE}}`, etc.) that the PDF pipeline fills at generation time.
+由 Playwright 渲染为 PDF 的 HTML 模板。使用占位符（`{{NAME}}`、`{{SUMMARY_TEXT}}`、`{{EXPERIENCE}}` 等），在生成时由 PDF 管线填充。
 
-**Design:** Space Grotesk headings + DM Sans body, single-column ATS-safe layout, self-hosted fonts from `fonts/`.
+**设计：** Space Grotesk 标题 + DM Sans 正文，单栏 ATS 安全布局，`fonts/` 自托管字体。
 
-**Customization:** Edit this file to change colors, spacing, or section order. The placeholder tokens are documented in `batch/batch-prompt.md` under "Template placeholders."
+**自定义：** 编辑此文件以更改颜色、间距或章节顺序。占位符 token 列表见脚本源码 `scripts/generate-pdf.mjs`。
 
 ### resume-template.html
 
-Resume-branded variant of `cv-template.html` for US/industry job applications. Key differences from the CV template:
+`cv-template.html` 的简历变体，用于美国/行业求职申请。与 CV 模板的关键差异：
 
-- **Title** reads "Resume" instead of "CV"
-- **No Certifications section** — resumes focus on recent, relevant experience
-- **Designed for 1–2 pages** — omits academic-style sections
+- **标题**显示"Resume"而非"CV"
+- **无证书部分** — 简历聚焦最近、相关经验
+- **设计为 1–2 页** — 略去学术风格章节
 
-Otherwise uses the same placeholder tokens (`{{NAME}}`, `{{SUMMARY_TEXT}}`, etc.) and is fully compatible with the existing PDF pipeline.
+使用相同的占位符（`{{NAME}}`、`{{SUMMARY_TEXT}}` 等），完全兼容现有 PDF 管线。
 
-**Keep in sync:** When updating `cv-template.html`, apply matching changes to `resume-template.html` (preserving the differences noted above).
+**保持同步：** 更新 `cv-template.html` 时，对 `resume-template.html` 应用匹配更改（保留上述差异）。
 
 ### cv-template.tex
 
-LaTeX template for Overleaf-compatible CV generation. Based on the [sb2nov/resume](https://github.com/sb2nov/resume) format. Uses placeholder tokens (`{{NAME}}`, `{{EXPERIENCE}}`, `{{PROJECTS}}`, etc.) that the LaTeX pipeline fills at generation time.
+Overleaf 兼容的简历生成 LaTeX 模板。基于 [sb2nov/resume](https://github.com/sb2nov/resume) 格式。使用占位符（`{{NAME}}`、`{{EXPERIENCE}}`、`{{PROJECTS}}` 等），在生成时由 LaTeX 管线填充。
 
-**Design:** Single-column ATS-safe layout using standard CTAN packages (`fontawesome5`, `enumitem`, `hyperref`, `titlesec`). No custom fonts or external dependencies — uploads directly to Overleaf.
+**设计：** 使用标准 CTAN 包（`fontawesome5`、`enumitem`、`hyperref`、`titlesec`）的单栏 ATS 安全布局。无自定义字体或外部依赖 — 直接上传到 Overleaf。
 
-**Usage:**
+**用法：**
 ```bash
-# Validate and compile .tex → .pdf (requires pdflatex on PATH)
-node generate-latex.mjs output/cv-name-company-date.tex
+# 验证并编译 .tex → .pdf（需要 PATH 上有 pdflatex）
+node scripts/generate-latex.mjs output/cv-name-company-date.tex
 
-# Or specify a custom output path
-node generate-latex.mjs output/cv-name-company-date.tex output/custom-name.pdf
+# 或指定自定义输出路径
+node scripts/generate-latex.mjs output/cv-name-company-date.tex output/custom-name.pdf
 ```
 
-**Prerequisites:** `pdflatex` via [MiKTeX](https://miktex.org/) (Windows) or TeX Live (Linux/macOS). First compilation may auto-install missing LaTeX packages. Alternatively, upload the `.tex` file directly to [Overleaf](https://www.overleaf.com) — no local install needed.
+**前置条件：** `pdflatex` 通过 [MiKTeX](https://miktex.org/)（Windows）或 TeX Live（Linux/macOS）。首次编译可能自动安装缺失的 LaTeX 包。或直接上传 `.tex` 文件到 [Overleaf](https://www.overleaf.com) — 无需本地安装。
 
-**Customization:** Edit this file to change margins, section order, or formatting commands. The placeholder tokens are documented in `modes/latex.md` under "Template Placeholders."
+**自定义：** 编辑此文件以更改边距、章节顺序或格式命令。
 
 ### portals.example.yml
 
-Pre-configured portal scanner with 45+ tracked companies and search queries. Contains title filters, company career page URLs, Greenhouse API endpoints, and WebSearch queries.
+> ⚠️ **注意：** career-ops-cn **不依赖扫描功能**。此文件仅作参考保留，实际不会被执行。
 
-**To activate:** Copy to project root as `portals.yml` and customize `title_filter.positive` keywords for your target roles. Add or remove companies as needed.
+原项目的预配置门户扫描器，包含 45+ 追踪公司和搜索查询。
 
 ### states.yml
 
-Defines the 8 canonical application states (`Evaluated`, `Applied`, `Responded`, `Interview`, `Offer`, `Rejected`, `Discarded`, `SKIP`) with aliases for common variants. All pipeline scripts validate statuses against this file.
+定义 8 个规范申请状态（`Evaluated`、`Applied`、`Responded`、`Interview`、`Offer`、`Rejected`、`Discarded`、`SKIP`）及其常见变体别名。所有管线脚本基于此文件验证状态。
 
-**Do not rename states** -- the dashboard and all scripts depend on these exact IDs. You can add aliases if you encounter new variants that should map to an existing state.
+**不要重命名 label 字段** — 仪表盘和所有脚本依赖这些精确字符串做匹配。`aliases` 列表里的中文别名仅用于解析用户输入时做容错匹配，正式写入 applications.md 时始终使用英文 label。

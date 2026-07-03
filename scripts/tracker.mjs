@@ -34,25 +34,39 @@
  * so the index can never serve stale reads.
  */
 
-import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync, statSync, renameSync, rmSync } from 'fs';
-import { createHash } from 'crypto';
-import { dirname, resolve, join, basename } from 'path';
-import { pathToFileURL } from 'url';
-import yaml from 'js-yaml';
+import {
+  readFileSync,
+  writeFileSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  statSync,
+  renameSync,
+  rmSync,
+} from "fs";
+import { createHash } from "crypto";
+import { dirname, resolve, join, basename } from "path";
+import { pathToFileURL } from "url";
+import yaml from "js-yaml";
 
-const MD_PATH = process.env.CAREER_OPS_TRACKER || 'data/applications.md';
-const DB_PATH = process.env.CAREER_OPS_TRACKER_DB
-  || (MD_PATH.endsWith('.md') ? MD_PATH.slice(0, -3) + '.db' : MD_PATH + '.db');
+const MD_PATH = process.env.CAREER_OPS_TRACKER || "data/applications.md";
+const DB_PATH =
+  process.env.CAREER_OPS_TRACKER_DB ||
+  (MD_PATH.endsWith(".md") ? MD_PATH.slice(0, -3) + ".db" : MD_PATH + ".db");
 
 // SQLite must never open the source of truth itself (an explicit
 // CAREER_OPS_TRACKER_DB could point both names at the same file).
 if (resolve(MD_PATH) === resolve(DB_PATH)) {
-  console.error(`Error: DB path must differ from the markdown path (${MD_PATH}).`);
+  console.error(
+    `Error: DB path must differ from the markdown path (${MD_PATH}).`,
+  );
   process.exit(1);
 }
-const STATES_PATH = 'templates/states.yml';
-const HEADER = '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |';
-const SEPARATOR = '|---|------|---------|------|-------|--------|-----|--------|-------|';
+const STATES_PATH = "templates/states.yml";
+const HEADER =
+  "| # | Date | Company | Role | Score | Status | PDF | Report | Notes |";
+const SEPARATOR =
+  "|---|------|---------|------|-------|--------|-----|--------|-------|";
 
 // ── node:sqlite loading ─────────────────────────────────────────────
 
@@ -61,16 +75,18 @@ async function loadSqlite() {
   // Node lines — silence only that one warning, leave everything else alone.
   const origEmit = process.emitWarning;
   process.emitWarning = (warning, ...args) => {
-    const text = typeof warning === 'string' ? warning : warning?.message || '';
-    if (text.includes('SQLite is an experimental feature')) return;
+    const text = typeof warning === "string" ? warning : warning?.message || "";
+    if (text.includes("SQLite is an experimental feature")) return;
     return origEmit.call(process, warning, ...args);
   };
   try {
-    const { DatabaseSync } = await import('node:sqlite');
+    const { DatabaseSync } = await import("node:sqlite");
     return DatabaseSync;
   } catch {
-    console.error('Error: node:sqlite is not available. tracker.mjs needs Node >= 22.5 (you are on ' + process.version + ').');
-    console.error('The markdown tracker keeps working without it — the index is optional.');
+    console.error(
+      `错误：node:sqlite 不可用。tracker.mjs 需要 Node >= 22.5（当前版本 ${process.version}）。`,
+    );
+    console.error("没有它 markdown 追踪器也能工作 — 索引是可选的。");
     process.exit(1);
   } finally {
     process.emitWarning = origEmit; // the warning fires at import time — safe to restore here
@@ -78,9 +94,9 @@ async function loadSqlite() {
 }
 
 function openDb(DatabaseSync) {
-  mkdirSync(dirname(DB_PATH) || '.', { recursive: true });
+  mkdirSync(dirname(DB_PATH) || ".", { recursive: true });
   const db = new DatabaseSync(DB_PATH);
-  db.exec('PRAGMA foreign_keys = ON'); // SQLite ignores REFERENCES without this
+  db.exec("PRAGMA foreign_keys = ON"); // SQLite ignores REFERENCES without this
   db.exec(`
     CREATE TABLE IF NOT EXISTS applications (
       id      INTEGER PRIMARY KEY,
@@ -115,10 +131,12 @@ function openDb(DatabaseSync) {
 
 function loadStates() {
   if (!existsSync(STATES_PATH)) {
-    console.error(`Error: ${STATES_PATH} not found — cannot validate statuses. Run from the career-ops root.`);
+    console.error(
+      `错误：${STATES_PATH} 未找到 — 无法验证状态。请从 career-ops 根目录运行。`,
+    );
     process.exit(1);
   }
-  const doc = yaml.load(readFileSync(STATES_PATH, 'utf-8'));
+  const doc = yaml.load(readFileSync(STATES_PATH, "utf-8"));
   const byKey = new Map(); // lowercased label/alias → canonical label
   const labels = [];
   for (const s of doc?.states || []) {
@@ -126,7 +144,8 @@ function loadStates() {
     labels.push(s.label);
     byKey.set(s.label.toLowerCase(), s.label);
     if (s.id) byKey.set(String(s.id).toLowerCase(), s.label);
-    for (const alias of s.aliases || []) byKey.set(String(alias).toLowerCase(), s.label);
+    for (const alias of s.aliases || [])
+      byKey.set(String(alias).toLowerCase(), s.label);
   }
   return { byKey, labels };
 }
@@ -136,8 +155,8 @@ function loadStates() {
 function normalizeStatus(raw, states) {
   if (!raw) return null;
   const cleaned = String(raw)
-    .replace(/\*\*/g, '')
-    .replace(/\(?\d{4}-\d{2}-\d{2}\)?/g, '')
+    .replace(/\*\*/g, "")
+    .replace(/\(?\d{4}-\d{2}-\d{2}\)?/g, "")
     .trim()
     .toLowerCase();
   return states.byKey.get(cleaned) || null;
@@ -150,7 +169,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // "鈥?" / "鈥�" variants. Only short placeholder cells are repaired — free-text
 // notes are preserved as-is rather than risk corrupting real content.
 function repairPlaceholder(cell) {
-  if (/^鈥.{0,2}$/.test(cell) || cell === '�') return '—';
+  if (/^鈥.{0,2}$/.test(cell) || cell === "�") return "—";
   return cell;
 }
 
@@ -158,16 +177,21 @@ function repairPlaceholder(cell) {
 
 function parseMarkdownRows(text, diag) {
   const rows = [];
-  for (const line of text.split('\n')) {
-    if (!line.trim().startsWith('|')) continue;
-    let cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+  for (const line of text.split("\n")) {
+    if (!line.trim().startsWith("|")) continue;
+    let cells = line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((c) => c.trim());
     if (cells.length < 2) continue;
-    if (cells[0] === '#' || /^[-: ]*$/.test(cells.join(''))) continue; // header / separator
+    if (cells[0] === "#" || /^[-: ]*$/.test(cells.join(""))) continue; // header / separator
     if (cells.length > 9) {
-      cells = [...cells.slice(0, 8), cells.slice(8).join(' | ')]; // stray pipes → notes
+      cells = [...cells.slice(0, 8), cells.slice(8).join(" | ")]; // stray pipes → notes
       if (diag) diag.strayPipes++;
     }
-    while (cells.length < 9) cells.push('');
+    while (cells.length < 9) cells.push("");
     rows.push(cells);
   }
   return rows;
@@ -183,11 +207,15 @@ export function removeRowByNum(content, num) {
   const target = String(num).trim();
   let removedCount = 0;
   let report = null;
-  const kept = content.split('\n').filter((line) => {
+  const kept = content.split("\n").filter((line) => {
     const t = line.trim();
-    if (!t.startsWith('|')) return true; // non-table line — keep verbatim
-    const cells = t.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
-    if (cells[0] === '#' || /^[-: ]*$/.test(cells.join(''))) return true; // header / separator
+    if (!t.startsWith("|")) return true; // non-table line — keep verbatim
+    const cells = t
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((c) => c.trim());
+    if (cells[0] === "#" || /^[-: ]*$/.test(cells.join(""))) return true; // header / separator
     if (cells[0] === target) {
       removedCount++;
       if (report === null) report = cells[7] || null; // report column (index 7)
@@ -195,7 +223,12 @@ export function removeRowByNum(content, num) {
     }
     return true;
   });
-  return { removed: removedCount > 0, removedCount, report, newContent: kept.join('\n') };
+  return {
+    removed: removedCount > 0,
+    removedCount,
+    report,
+    newContent: kept.join("\n"),
+  };
 }
 
 // Parse + normalize the markdown into index-ready rows. The markdown itself is
@@ -203,8 +236,15 @@ export function removeRowByNum(content, num) {
 // diagnostics tell the user what to fix at the source (normalize-statuses.mjs,
 // dedup-tracker.mjs).
 function parseTracker(states) {
-  const diag = { mojibake: 0, scoreInStatus: 0, unknownStatus: 0, badId: 0, badDate: 0, strayPipes: 0 };
-  const rows = parseMarkdownRows(readFileSync(MD_PATH, 'utf-8'), diag);
+  const diag = {
+    mojibake: 0,
+    scoreInStatus: 0,
+    unknownStatus: 0,
+    badId: 0,
+    badDate: 0,
+    strayPipes: 0,
+  };
+  const rows = parseMarkdownRows(readFileSync(MD_PATH, "utf-8"), diag);
 
   const usedIds = new Set();
   let maxId = 0;
@@ -213,24 +253,26 @@ function parseTracker(states) {
   for (const cells of rows) {
     let [idRaw, date, company, role, score, status, pdf, report, notes] = cells;
 
-    const before = [score, pdf, report].join('|');
+    const before = [score, pdf, report].join("|");
     score = repairPlaceholder(score);
     pdf = repairPlaceholder(pdf);
     report = repairPlaceholder(report);
-    if ([score, pdf, report].join('|') !== before) diag.mojibake++;
+    if ([score, pdf, report].join("|") !== before) diag.mojibake++;
 
     // Score sitting in the status column (column drift)
     const scoreInStatus = status.match(SCORE_RE);
     if (scoreInStatus) {
       if (!SCORE_RE.test(score)) score = scoreInStatus[1];
-      status = 'Evaluated';
+      status = "Evaluated";
       diag.scoreInStatus++;
     }
 
     const canonical = normalizeStatus(status, states);
     if (!canonical) {
-      notes = notes ? `${notes} [sync: original status "${status}"]` : `[sync: original status "${status}"]`;
-      status = 'Evaluated';
+      notes = notes
+        ? `${notes} [sync: original status "${status}"]`
+        : `[sync: original status "${status}"]`;
+      status = "Evaluated";
       diag.unknownStatus++;
     } else {
       status = canonical;
@@ -247,7 +289,18 @@ function parseTracker(states) {
 
     if (!DATE_RE.test(date)) diag.badDate++; // kept as-is — flagged, not destroyed
 
-    apps.push({ id, pos: apps.length, date, company, role, score: score || '—', status, pdf: pdf || '❌', report: report || '—', notes });
+    apps.push({
+      id,
+      pos: apps.length,
+      date,
+      company,
+      role,
+      score: score || "—",
+      status,
+      pdf: pdf || "❌",
+      report: report || "—",
+      notes,
+    });
   }
   for (const app of apps) if (app.id === 0) app.id = ++maxId;
 
@@ -255,7 +308,7 @@ function parseTracker(states) {
 }
 
 function mdHash() {
-  return createHash('sha256').update(readFileSync(MD_PATH)).digest('hex');
+  return createHash("sha256").update(readFileSync(MD_PATH)).digest("hex");
 }
 
 // ── Sync (markdown → derived index) ─────────────────────────────────
@@ -263,17 +316,28 @@ function mdHash() {
 function reportDiagnostics(diag) {
   const total = Object.values(diag).reduce((a, b) => a + b, 0);
   if (total === 0) {
-    console.error('No corruption detected — index matches the markdown cleanly.');
+    console.error("未检测到损坏 — 索引与 markdown 完全匹配。");
     return 0;
   }
-  console.error(`Corruption detected in ${MD_PATH} (normalized in the index only — the markdown is untouched):`);
-  if (diag.mojibake) console.error(`  ${diag.mojibake} mojibake placeholder cell(s)`);
-  if (diag.scoreInStatus) console.error(`  ${diag.scoreInStatus} score(s) sitting in the status column`);
-  if (diag.unknownStatus) console.error(`  ${diag.unknownStatus} non-canonical status(es), indexed as Evaluated (original kept in notes)`);
-  if (diag.badId) console.error(`  ${diag.badId} missing/duplicate id(s), reassigned in the index`);
-  if (diag.badDate) console.error(`  ${diag.badDate} malformed date(s), kept as-is`);
-  if (diag.strayPipes) console.error(`  ${diag.strayPipes} row(s) with stray pipes, folded into notes`);
-  console.error('Fix at the source with `node normalize-statuses.mjs` / `node dedup-tracker.mjs`, then re-sync.');
+  console.error(
+    `在 ${MD_PATH} 中检测到损坏（仅在索引中标准化 — markdown 未改动）：`,
+  );
+  if (diag.mojibake) console.error(`  ${diag.mojibake} 个乱码占位符单元格`);
+  if (diag.scoreInStatus)
+    console.error(`  ${diag.scoreInStatus} 个评分误放在状态列中`);
+  if (diag.unknownStatus)
+    console.error(
+      `  ${diag.unknownStatus} 个非标准状态，已索引为“已评估”（原始状态保留在备注中）`,
+    );
+  if (diag.badId)
+    console.error(`  ${diag.badId} 个缺失/重复 ID，已在索引中重新分配`);
+  if (diag.badDate)
+    console.error(`  ${diag.badDate} 个格式错误的日期，保留原样`);
+  if (diag.strayPipes)
+    console.error(`  ${diag.strayPipes} 行包含多余管道符，已合并到备注中`);
+  console.error(
+    "在源文件中使用 `node normalize-statuses.mjs` / `node dedup-tracker.mjs` 修复，然后重新同步。",
+  );
   return total;
 }
 
@@ -281,30 +345,52 @@ function syncIndex(db, states) {
   const { apps, diag } = parseTracker(states);
   const today = new Date().toISOString().slice(0, 10);
 
-  db.exec('BEGIN');
-  db.exec('PRAGMA defer_foreign_keys = ON'); // full rebuild — FKs settle at commit
+  db.exec("BEGIN");
+  db.exec("PRAGMA defer_foreign_keys = ON"); // full rebuild — FKs settle at commit
   try {
-    db.exec('DELETE FROM applications');
-    const insertApp = db.prepare('INSERT INTO applications (id, pos, date, company, role, score, status, pdf, report, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    for (const a of apps) insertApp.run(a.id, a.pos, a.date, a.company, a.role, a.score, a.status, a.pdf, a.report, a.notes);
+    db.exec("DELETE FROM applications");
+    const insertApp = db.prepare(
+      "INSERT INTO applications (id, pos, date, company, role, score, status, pdf, report, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const a of apps)
+      insertApp.run(
+        a.id,
+        a.pos,
+        a.date,
+        a.company,
+        a.role,
+        a.score,
+        a.status,
+        a.pdf,
+        a.report,
+        a.notes,
+      );
 
     // Status history: events persist across rebuilds, keyed by id. An app whose
     // status changed since the last sync gets a new event; rows that left the
     // markdown lose their events (the index never outlives its source).
-    db.exec('DELETE FROM status_events WHERE app_id NOT IN (SELECT id FROM applications)');
-    const latestEvent = db.prepare('SELECT status FROM status_events WHERE app_id = ? ORDER BY id DESC LIMIT 1');
-    const insertEvent = db.prepare('INSERT INTO status_events (app_id, status, date) VALUES (?, ?, ?)');
+    db.exec(
+      "DELETE FROM status_events WHERE app_id NOT IN (SELECT id FROM applications)",
+    );
+    const latestEvent = db.prepare(
+      "SELECT status FROM status_events WHERE app_id = ? ORDER BY id DESC LIMIT 1",
+    );
+    const insertEvent = db.prepare(
+      "INSERT INTO status_events (app_id, status, date) VALUES (?, ?, ?)",
+    );
     for (const a of apps) {
       const last = latestEvent.get(a.id);
-      if (!last) insertEvent.run(a.id, a.status, DATE_RE.test(a.date) ? a.date : today);
+      if (!last)
+        insertEvent.run(a.id, a.status, DATE_RE.test(a.date) ? a.date : today);
       else if (last.status !== a.status) insertEvent.run(a.id, a.status, today);
     }
 
-    db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
-      .run('md_sha256', mdHash());
-    db.exec('COMMIT');
+    db.prepare(
+      "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    ).run("md_sha256", mdHash());
+    db.exec("COMMIT");
   } catch (err) {
-    db.exec('ROLLBACK');
+    db.exec("ROLLBACK");
     throw err;
   }
   return { apps, diag };
@@ -312,23 +398,23 @@ function syncIndex(db, states) {
 
 async function sync(args) {
   if (!existsSync(MD_PATH)) {
-    console.error(`Error: ${MD_PATH} not found — nothing to index.`);
+    console.error(`错误：${MD_PATH} 未找到 — 没有可索引的内容。`);
     process.exit(1);
   }
   const states = loadStates();
 
-  if (args.includes('--check')) {
+  if (args.includes("--check")) {
     const { apps, diag } = parseTracker(states);
-    console.error(`Parsed ${apps.length} data rows from ${MD_PATH}`);
+    console.error(`从 ${MD_PATH} 解析了 ${apps.length} 条数据行`);
     const issues = reportDiagnostics(diag);
-    console.error('(--check — no index written)');
+    console.error("(--check — 未写入索引)");
     process.exit(issues > 0 ? 1 : 0);
   }
 
   const DatabaseSync = await loadSqlite();
   const db = openDb(DatabaseSync);
   const { apps, diag } = syncIndex(db, states);
-  console.error(`Indexed ${apps.length} applications from ${MD_PATH} into ${DB_PATH}`);
+  console.error(`从 ${MD_PATH} 索引了 ${apps.length} 条申请记录到 ${DB_PATH}`);
   reportDiagnostics(diag);
 }
 
@@ -336,12 +422,16 @@ async function sync(args) {
 // the last sync (or was never synced), rebuild the index first.
 function ensureFresh(db, states) {
   if (!existsSync(MD_PATH)) {
-    console.error(`Error: ${MD_PATH} not found — the index has no source of truth to read from.`);
+    console.error(
+      `Error: ${MD_PATH} not found — the index has no source of truth to read from.`,
+    );
     process.exit(1);
   }
-  const synced = db.prepare('SELECT value FROM meta WHERE key = ?').get('md_sha256');
+  const synced = db
+    .prepare("SELECT value FROM meta WHERE key = ?")
+    .get("md_sha256");
   if (synced && synced.value === mdHash()) return;
-  console.error(`(index stale — resyncing from ${MD_PATH})`);
+  console.error(`(索引已过期 — 正在从 ${MD_PATH} 重新同步)`);
   syncIndex(db, states);
 }
 
@@ -349,13 +439,21 @@ function ensureFresh(db, states) {
 
 function flagValue(args, flag) {
   const idx = args.indexOf(flag);
-  if (idx !== -1 && args[idx + 1] !== undefined && !args[idx + 1].startsWith('--')) return args[idx + 1];
-  const kv = args.find(a => a.startsWith(flag + '='));
-  return kv ? kv.split('=').slice(1).join('=') : null;
+  if (
+    idx !== -1 &&
+    args[idx + 1] !== undefined &&
+    !args[idx + 1].startsWith("--")
+  )
+    return args[idx + 1];
+  const kv = args.find((a) => a.startsWith(flag + "="));
+  return kv ? kv.split("=").slice(1).join("=") : null;
 }
 
 function rowToMarkdown(r) {
-  const clean = (v) => String(v ?? '').replace(/\|/g, '│').replace(/\r?\n/g, ' ');
+  const clean = (v) =>
+    String(v ?? "")
+      .replace(/\|/g, "│")
+      .replace(/\r?\n/g, " ");
   return `| ${r.id} | ${clean(r.date)} | ${clean(r.company)} | ${clean(r.role)} | ${clean(r.score)} | ${clean(r.status)} | ${clean(r.pdf)} | ${clean(r.report)} | ${clean(r.notes)} |`;
 }
 
@@ -367,31 +465,55 @@ async function query(args) {
 
   const where = [];
   const params = [];
-  const status = flagValue(args, '--status');
+  const status = flagValue(args, "--status");
   if (status) {
     const canonical = normalizeStatus(status, states);
-    if (!canonical) { console.error(`Error: unknown status "${status}". Canonical: ${states.labels.join(', ')}`); process.exit(1); }
-    where.push('status = ?'); params.push(canonical);
+    if (!canonical) {
+      console.error(
+        `错误：未知状态 "${status}"。标准状态：${states.labels.join(", ")}`,
+      );
+      process.exit(1);
+    }
+    where.push("status = ?");
+    params.push(canonical);
   }
-  const company = flagValue(args, '--company');
-  if (company) { where.push('company LIKE ?'); params.push(`%${company}%`); }
-  const role = flagValue(args, '--role');
-  if (role) { where.push('role LIKE ?'); params.push(`%${role}%`); }
-  const since = flagValue(args, '--since');
+  const company = flagValue(args, "--company");
+  if (company) {
+    where.push("company LIKE ?");
+    params.push(`%${company}%`);
+  }
+  const role = flagValue(args, "--role");
+  if (role) {
+    where.push("role LIKE ?");
+    params.push(`%${role}%`);
+  }
+  const since = flagValue(args, "--since");
   if (since) {
-    if (!DATE_RE.test(since)) { console.error('Error: --since must be YYYY-MM-DD'); process.exit(1); }
-    where.push('date >= ?'); params.push(since);
+    if (!DATE_RE.test(since)) {
+      console.error("Error: --since must be YYYY-MM-DD");
+      process.exit(1);
+    }
+    where.push("date >= ?");
+    params.push(since);
   }
-  const id = flagValue(args, '--id');
-  if (id) { where.push('id = ?'); params.push(parseInt(id, 10)); }
+  const id = flagValue(args, "--id");
+  if (id) {
+    where.push("id = ?");
+    params.push(parseInt(id, 10));
+  }
 
-  let sql = 'SELECT id, date, company, role, score, status, pdf, report, notes FROM applications'
-    + (where.length ? ' WHERE ' + where.join(' AND ') : '') + ' ORDER BY id DESC';
-  const limit = parseInt(flagValue(args, '--limit') || '0', 10);
-  if (limit > 0) { sql += ' LIMIT ?'; params.push(limit); }
+  let sql =
+    "SELECT id, date, company, role, score, status, pdf, report, notes FROM applications" +
+    (where.length ? " WHERE " + where.join(" AND ") : "") +
+    " ORDER BY id DESC";
+  const limit = parseInt(flagValue(args, "--limit") || "0", 10);
+  if (limit > 0) {
+    sql += " LIMIT ?";
+    params.push(limit);
+  }
 
   const rows = db.prepare(sql).all(...params);
-  if (args.includes('--json')) {
+  if (args.includes("--json")) {
     console.log(JSON.stringify(rows, null, 2));
   } else {
     console.log(HEADER);
@@ -405,12 +527,22 @@ async function history(args) {
   const DatabaseSync = await loadSqlite();
   const db = openDb(DatabaseSync);
   ensureFresh(db, loadStates());
-  const id = parseInt(flagValue(args, '--id') || '', 10);
-  if (!Number.isInteger(id)) { console.error('Error: history requires --id N'); process.exit(1); }
-  const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(id);
-  if (!app) { console.error(`Error: no application with id ${id}`); process.exit(1); }
+  const id = parseInt(flagValue(args, "--id") || "", 10);
+  if (!Number.isInteger(id)) {
+    console.error("Error: history requires --id N");
+    process.exit(1);
+  }
+  const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(id);
+  if (!app) {
+    console.error(`Error: no application with id ${id}`);
+    process.exit(1);
+  }
   console.log(`#${app.id} ${app.company} — ${app.role}`);
-  for (const e of db.prepare('SELECT status, date FROM status_events WHERE app_id = ? ORDER BY id').all(id)) {
+  for (const e of db
+    .prepare(
+      "SELECT status, date FROM status_events WHERE app_id = ? ORDER BY id",
+    )
+    .all(id)) {
     console.log(`  ${e.date}  ${e.status}`);
   }
 }
@@ -425,17 +557,17 @@ async function exportMd(args) {
   const DatabaseSync = await loadSqlite();
   const db = openDb(DatabaseSync);
   ensureFresh(db, loadStates());
-  const rows = db.prepare('SELECT * FROM applications ORDER BY pos').all();
+  const rows = db.prepare("SELECT * FROM applications ORDER BY pos").all();
   const out = [
-    '# Applications Tracker',
-    '',
+    "# Applications Tracker",
+    "",
     HEADER,
     SEPARATOR,
     ...rows.map(rowToMarkdown),
-    '',
-  ].join('\n');
+    "",
+  ].join("\n");
 
-  const outPath = flagValue(args, '--out');
+  const outPath = flagValue(args, "--out");
   if (!outPath) {
     process.stdout.write(out);
     return;
@@ -444,13 +576,13 @@ async function exportMd(args) {
     console.error(`Error: --out ${outPath} is a directory — pass a file path.`);
     process.exit(1);
   }
-  mkdirSync(dirname(outPath) || '.', { recursive: true });
+  mkdirSync(dirname(outPath) || ".", { recursive: true });
   // Never silently clobber — whatever was there is backed up first.
   if (existsSync(outPath)) {
-    copyFileSync(outPath, outPath + '.bak');
+    copyFileSync(outPath, outPath + ".bak");
     console.error(`Existing ${outPath} backed up to ${outPath}.bak`);
   }
-  writeFileSync(outPath, out, 'utf-8');
+  writeFileSync(outPath, out, "utf-8");
   console.error(`Exported ${rows.length} applications to ${outPath}`);
 }
 
@@ -459,7 +591,10 @@ async function exportMd(args) {
 // Atomic file replace via a same-directory temp file + rename, so a reader never
 // sees a partially written applications.md (mirrors merge-tracker's writer).
 function writeFileAtomic(filePath, content) {
-  const tmp = join(dirname(filePath), `.${basename(filePath)}.${process.pid}.${Date.now()}.tmp`);
+  const tmp = join(
+    dirname(filePath),
+    `.${basename(filePath)}.${process.pid}.${Date.now()}.tmp`,
+  );
   try {
     writeFileSync(tmp, content);
     renameSync(tmp, filePath);
@@ -477,22 +612,29 @@ function writeFileAtomic(filePath, content) {
 // at the orchestration layer; a shared lock is a follow-up once merge-tracker is
 // import-safe).
 async function deleteApp(args) {
-  const num = flagValue(args, '--num');
+  const num = flagValue(args, "--num");
   if (!num) {
-    console.error('Usage: node tracker.mjs delete --num <N> [--dry-run]   (remove one application row by its number)');
+    console.error(
+      "用法：node tracker.mjs delete --num <N> [--dry-run]   （按编号删除一条申请记录）",
+    );
     process.exit(1);
   }
   if (!existsSync(MD_PATH)) {
-    console.error(`Error: ${MD_PATH} not found — nothing to delete.`);
+    console.error(`错误：${MD_PATH} 未找到 — 没有可删除的内容。`);
     process.exit(1);
   }
-  const { removed, removedCount, report, newContent } = removeRowByNum(readFileSync(MD_PATH, 'utf-8'), num);
+  const { removed, removedCount, report, newContent } = removeRowByNum(
+    readFileSync(MD_PATH, "utf-8"),
+    num,
+  );
   if (!removed) {
-    console.error(`No application numbered ${num} in ${MD_PATH}.`);
+    console.error(`${MD_PATH} 中没有编号为 ${num} 的申请记录。`);
     process.exit(1);
   }
-  if (args.includes('--dry-run')) {
-    console.error(`Would remove application ${num} (${removedCount} row${removedCount > 1 ? 's' : ''}) from ${MD_PATH}.`);
+  if (args.includes("--dry-run")) {
+    console.error(
+      `将从 ${MD_PATH} 中删除申请记录 ${num}（${removedCount} 行）。`,
+    );
     if (report) console.error(`(report file would be orphaned: ${report})`);
     return;
   }
@@ -506,8 +648,10 @@ async function deleteApp(args) {
   } catch (e) {
     console.error(`(row removed; index resync skipped: ${e.message})`);
   }
-  console.error(`Removed application ${num} (${removedCount} row${removedCount > 1 ? 's' : ''}) from ${MD_PATH} and reindexed.`);
-  if (report) console.error(`Note: report file may now be orphaned — ${report}`);
+  console.error(
+    `已从 ${MD_PATH} 中删除申请记录 ${num}（${removedCount} 行）并重新索引。`,
+  );
+  console.error(`注意：报告文件可能已成为孤儿文件 — ${report}`);
 }
 
 const COMMANDS = { sync, query, history, export: exportMd, delete: deleteApp };
@@ -516,16 +660,18 @@ async function main() {
   const [command, ...args] = process.argv.slice(2);
   const fn = COMMANDS[command];
   if (!fn) {
-    console.log('Usage: node tracker.mjs <sync|query|history|export|delete> [flags]');
-    console.log('See the header comment of this file for examples, or docs/SCRIPTS.md.');
+    console.error(
+      "用法：node tracker.mjs <sync|query|history|export|delete> [flags]",
+    );
+    console.log("查看此文件头部注释中的示例，或 docs/SCRIPTS.md。");
     process.exit(command ? 1 : 0);
   }
   await fn(args);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
-  main().catch(err => {
-    console.error('Fatal:', err.message);
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+  main().catch((err) => {
+    console.error("致命错误：", err.message);
     process.exit(1);
   });
 }

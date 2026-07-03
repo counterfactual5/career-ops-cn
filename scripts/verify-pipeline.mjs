@@ -17,80 +17,142 @@
  * Run: node career-ops/verify-pipeline.mjs
  */
 
-import { readFileSync, readdirSync, existsSync, mkdirSync, unlinkSync, statSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import {
+  readFileSync,
+  readdirSync,
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+  statSync,
+} from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original).
 // CAREER_OPS_TRACKER overrides the path (used by tests and non-standard layouts).
 const APPS_FILE = process.env.CAREER_OPS_TRACKER
   ? process.env.CAREER_OPS_TRACKER
-  : existsSync(join(CAREER_OPS, 'data/applications.md'))
-    ? join(CAREER_OPS, 'data/applications.md')
-    : join(CAREER_OPS, 'applications.md');
-const ADDITIONS_DIR = join(CAREER_OPS, 'batch/tracker-additions');
+  : existsSync(join(CAREER_OPS, "data/applications.md"))
+    ? join(CAREER_OPS, "data/applications.md")
+    : join(CAREER_OPS, "applications.md");
+const ADDITIONS_DIR = join(CAREER_OPS, "batch/tracker-additions");
 // CAREER_OPS_REPORTS overrides the reports dir (used by tests, mirrors CAREER_OPS_TRACKER).
-const REPORTS_DIR = process.env.CAREER_OPS_REPORTS || join(CAREER_OPS, 'reports');
-const STATES_FILE = existsSync(join(CAREER_OPS, 'templates/states.yml'))
-  ? join(CAREER_OPS, 'templates/states.yml')
-  : join(CAREER_OPS, 'states.yml');
+const REPORTS_DIR =
+  process.env.CAREER_OPS_REPORTS || join(CAREER_OPS, "reports");
+const STATES_FILE = existsSync(join(CAREER_OPS, "templates/states.yml"))
+  ? join(CAREER_OPS, "templates/states.yml")
+  : join(CAREER_OPS, "states.yml");
 
 // Ensure required directories exist (fresh setup)
-mkdirSync(join(CAREER_OPS, 'data'), { recursive: true });
+mkdirSync(join(CAREER_OPS, "data"), { recursive: true });
 mkdirSync(REPORTS_DIR, { recursive: true });
 
 const CANONICAL_STATUSES = [
-  'evaluated', 'applied', 'responded', 'interview',
-  'offer', 'rejected', 'discarded', 'skip',
+  "evaluated",
+  "applied",
+  "responded",
+  "interview",
+  "offer",
+  "rejected",
+  "discarded",
+  "skip",
 ];
 
 const ALIASES = {
-  'evaluada': 'evaluated', 'condicional': 'evaluated', 'hold': 'evaluated', 'evaluar': 'evaluated', 'verificar': 'evaluated',
-  'aplicado': 'applied', 'enviada': 'applied', 'aplicada': 'applied', 'applied': 'applied', 'sent': 'applied',
-  'respondido': 'responded',
-  'entrevista': 'interview',
-  'oferta': 'offer',
-  'rechazado': 'rejected', 'rechazada': 'rejected',
-  'descartado': 'discarded', 'descartada': 'discarded', 'cerrada': 'discarded', 'cancelada': 'discarded',
-  'no aplicar': 'skip', 'no_aplicar': 'skip', 'monitor': 'skip', 'geo blocker': 'skip',
+  evaluada: "evaluated",
+  condicional: "evaluated",
+  hold: "evaluated",
+  evaluar: "evaluated",
+  verificar: "evaluated",
+  aplicado: "applied",
+  enviada: "applied",
+  aplicada: "applied",
+  applied: "applied",
+  sent: "applied",
+  respondido: "responded",
+  entrevista: "interview",
+  oferta: "offer",
+  rechazado: "rejected",
+  rechazada: "rejected",
+  descartado: "discarded",
+  descartada: "discarded",
+  cerrada: "discarded",
+  cancelada: "discarded",
+  "no aplicar": "skip",
+  no_aplicar: "skip",
+  monitor: "skip",
+  "geo blocker": "skip",
 };
 
 let errors = 0;
 let warnings = 0;
 
-function error(msg) { console.log(`❌ ${msg}`); errors++; }
-function warn(msg) { console.log(`⚠️  ${msg}`); warnings++; }
-function ok(msg) { console.log(`✅ ${msg}`); }
+function error(msg) {
+  console.log(`❌ ${msg}`);
+  errors++;
+}
+function warn(msg) {
+  console.log(`⚠️  ${msg}`);
+  warnings++;
+}
+function ok(msg) {
+  console.log(`✅ ${msg}`);
+}
 
 // --- Read applications.md ---
 if (!existsSync(APPS_FILE)) {
-  console.log('\n📊 No applications.md found. This is normal for a fresh setup.');
-  console.log('   The file will be created when you evaluate your first offer.\n');
+  console.log("\n📊 未找到 applications.md。新安装时这是正常的。");
+  console.log("   评估第一个岗位后将自动创建此文件。\n");
   process.exit(0);
 }
-const content = readFileSync(APPS_FILE, 'utf-8');
-const lines = content.split('\n');
+const content = readFileSync(APPS_FILE, "utf-8");
+const lines = content.split("\n");
 
 // Map columns by header name so the checks work whether the tracker uses the
 // original 9-column layout or a customized one with an extra column (e.g. a
 // Location column after Role). Fixed-position indexing would otherwise read
 // Location where Score is expected and flag false errors. Falls back to the
 // legacy fixed layout when no recognizable header row is found.
-const LEGACY_COLMAP = { num: 1, date: 2, company: 3, role: 4, score: 5, status: 6, pdf: 7, report: 8, notes: 9 };
+const LEGACY_COLMAP = {
+  num: 1,
+  date: 2,
+  company: 3,
+  role: 4,
+  score: 5,
+  status: 6,
+  pdf: 7,
+  report: 8,
+  notes: 9,
+};
 const HEADER_ALIASES = {
-  '#': 'num', 'num': 'num', 'date': 'date', 'company': 'company', 'empresa': 'company',
-  'role': 'role', 'puesto': 'role', 'location': 'location', 'score': 'score',
-  'status': 'status', 'pdf': 'pdf', 'report': 'report', 'notes': 'notes',
+  "#": "num",
+  num: "num",
+  date: "date",
+  company: "company",
+  empresa: "company",
+  role: "role",
+  puesto: "role",
+  location: "location",
+  score: "score",
+  status: "status",
+  pdf: "pdf",
+  report: "report",
+  notes: "notes",
 };
 function detectColumns(allLines) {
   for (const line of allLines) {
-    if (!line.startsWith('|')) continue;
-    const cells = line.split('|').map(s => s.trim().toLowerCase());
-    if (!cells.includes('company') || !cells.includes('role')) continue;
+    if (!line.startsWith("|")) continue;
+    const cells = line.split("|").map((s) => s.trim().toLowerCase());
+    if (!cells.includes("company") || !cells.includes("role")) continue;
     const map = {};
-    cells.forEach((c, i) => { if (HEADER_ALIASES[c] != null) map[HEADER_ALIASES[c]] = i; });
-    if (['num', 'company', 'role', 'score', 'status'].every(k => map[k] != null)) return map;
+    cells.forEach((c, i) => {
+      if (HEADER_ALIASES[c] != null) map[HEADER_ALIASES[c]] = i;
+    });
+    if (
+      ["num", "company", "role", "score", "status"].every((k) => map[k] != null)
+    )
+      return map;
   }
   return null;
 }
@@ -99,8 +161,8 @@ const MAX_IDX = Math.max(...Object.values(COLMAP));
 
 const entries = [];
 for (const line of lines) {
-  if (!line.startsWith('|')) continue;
-  const parts = line.split('|').map(s => s.trim());
+  if (!line.startsWith("|")) continue;
+  const parts = line.split("|").map((s) => s.trim());
   if (parts.length <= MAX_IDX) continue;
   const num = parseInt(parts[COLMAP.num]);
   if (isNaN(num)) continue;
@@ -109,23 +171,23 @@ for (const line of lines) {
     date: parts[COLMAP.date],
     company: parts[COLMAP.company],
     role: parts[COLMAP.role],
-    location: COLMAP.location != null ? parts[COLMAP.location] : '',
+    location: COLMAP.location != null ? parts[COLMAP.location] : "",
     score: parts[COLMAP.score],
     status: parts[COLMAP.status],
     pdf: parts[COLMAP.pdf],
     report: parts[COLMAP.report],
-    notes: COLMAP.notes != null ? (parts[COLMAP.notes] || '') : '',
+    notes: COLMAP.notes != null ? parts[COLMAP.notes] || "" : "",
   });
 }
 
-console.log(`\n📊 Checking ${entries.length} entries in applications.md\n`);
+console.log(`\n📊 正在检查 applications.md 中的 ${entries.length} 条记录\n`);
 
 // --- Check 1: Canonical statuses ---
 let badStatuses = 0;
 for (const e of entries) {
-  const clean = e.status.replace(/\*\*/g, '').trim().toLowerCase();
+  const clean = e.status.replace(/\*\*/g, "").trim().toLowerCase();
   // Strip trailing dates
-  const statusOnly = clean.replace(/\s+\d{4}-\d{2}-\d{2}.*$/, '').trim();
+  const statusOnly = clean.replace(/\s+\d{4}-\d{2}-\d{2}.*$/, "").trim();
 
   if (!CANONICAL_STATUSES.includes(statusOnly) && !ALIASES[statusOnly]) {
     error(`#${e.num}: Non-canonical status "${e.status}"`);
@@ -133,35 +195,41 @@ for (const e of entries) {
   }
 
   // Check for markdown bold in status
-  if (e.status.includes('**')) {
+  if (e.status.includes("**")) {
     error(`#${e.num}: Status contains markdown bold: "${e.status}"`);
     badStatuses++;
   }
 
   // Check for dates in status
   if (/\d{4}-\d{2}-\d{2}/.test(e.status)) {
-    error(`#${e.num}: Status contains date: "${e.status}" — dates go in date column`);
+    error(
+      `#${e.num}: Status contains date: "${e.status}" — dates go in date column`,
+    );
     badStatuses++;
   }
 }
-if (badStatuses === 0) ok('All statuses are canonical');
+if (badStatuses === 0) ok("所有状态均为标准状态");
 
 // --- Check 2: Duplicates ---
 const companyRoleMap = new Map();
 let dupes = 0;
 for (const e of entries) {
-  const key = e.company.toLowerCase().replace(/[^a-z0-9]/g, '') + '::' +
-    e.role.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+  const key =
+    e.company.toLowerCase().replace(/[^a-z0-9]/g, "") +
+    "::" +
+    e.role.toLowerCase().replace(/[^a-z0-9 ]/g, "");
   if (!companyRoleMap.has(key)) companyRoleMap.set(key, []);
   companyRoleMap.get(key).push(e);
 }
 for (const [key, group] of companyRoleMap) {
   if (group.length > 1) {
-    warn(`Possible duplicates: ${group.map(e => `#${e.num}`).join(', ')} (${group[0].company} — ${group[0].role})`);
+    warn(
+      `Possible duplicates: ${group.map((e) => `#${e.num}`).join(", ")} (${group[0].company} — ${group[0].role})`,
+    );
     dupes++;
   }
 }
-if (dupes === 0) ok('No exact duplicates found');
+if (dupes === 0) ok("未发现精确重复");
 
 // --- Check 3: Report links ---
 // Markdown links resolve relative to the file that contains them, so report
@@ -174,57 +242,62 @@ for (const e of entries) {
   const match = e.report.match(/\]\(([^)]+)\)/);
   if (!match) continue;
   const link = match[1];
-  if (!existsSync(join(TRACKER_DIR, link)) && !existsSync(join(CAREER_OPS, link))) {
+  if (
+    !existsSync(join(TRACKER_DIR, link)) &&
+    !existsSync(join(CAREER_OPS, link))
+  ) {
     error(`#${e.num}: Report not found: ${link}`);
     brokenReports++;
   }
 }
-if (brokenReports === 0) ok('All report links valid');
+if (brokenReports === 0) ok("所有报告链接有效");
 
 // --- Check 4: Score format ---
 let badScores = 0;
 for (const e of entries) {
-  const s = e.score.replace(/\*\*/g, '').trim();
-  if (!/^\d+\.?\d*\/5$/.test(s) && s !== 'N/A' && s !== 'DUP') {
+  const s = e.score.replace(/\*\*/g, "").trim();
+  if (!/^\d+\.?\d*\/5$/.test(s) && s !== "N/A" && s !== "DUP") {
     error(`#${e.num}: Invalid score format: "${e.score}"`);
     badScores++;
   }
 }
-if (badScores === 0) ok('All scores valid');
+if (badScores === 0) ok("所有评分格式有效");
 
 // --- Check 5: Row format ---
 let badRows = 0;
 for (const line of lines) {
-  if (!line.startsWith('|')) continue;
-  if (line.includes('---') || line.includes('Empresa')) continue;
-  const parts = line.split('|');
+  if (!line.startsWith("|")) continue;
+  if (line.includes("---") || line.includes("Empresa")) continue;
+  const parts = line.split("|");
   if (parts.length <= MAX_IDX) {
-    error(`Row with too few columns (need ${MAX_IDX} data cols): ${line.substring(0, 80)}...`);
+    error(
+      `Row with too few columns (need ${MAX_IDX} data cols): ${line.substring(0, 80)}...`,
+    );
     badRows++;
   }
 }
-if (badRows === 0) ok('All rows properly formatted');
+if (badRows === 0) ok("所有行格式正确");
 
 // --- Check 6: Pending TSVs ---
 let pendingTsvs = 0;
 if (existsSync(ADDITIONS_DIR)) {
-  const files = readdirSync(ADDITIONS_DIR).filter(f => f.endsWith('.tsv'));
+  const files = readdirSync(ADDITIONS_DIR).filter((f) => f.endsWith(".tsv"));
   pendingTsvs = files.length;
   if (pendingTsvs > 0) {
     warn(`${pendingTsvs} pending TSVs in tracker-additions/ (not merged)`);
   }
 }
-if (pendingTsvs === 0) ok('No pending TSVs');
+if (pendingTsvs === 0) ok("无待合并 TSV");
 
 // --- Check 7: Bold in scores ---
 let boldScores = 0;
 for (const e of entries) {
-  if (e.score.includes('**')) {
+  if (e.score.includes("**")) {
     warn(`#${e.num}: Score has markdown bold: "${e.score}"`);
     boldScores++;
   }
 }
-if (boldScores === 0) ok('No bold in scores');
+if (boldScores === 0) ok("评分中无粗体标记");
 
 // --- Check 8: Stale report-number sentinels (GC) ---
 // reserve-report-num.mjs drops NNN-RESERVED.md files in reports/ when a
@@ -236,7 +309,7 @@ let staleSentinels = 0;
 if (existsSync(REPORTS_DIR)) {
   const now = Date.now();
   for (const name of readdirSync(REPORTS_DIR)) {
-    if (!name.endsWith('-RESERVED.md')) continue;
+    if (!name.endsWith("-RESERVED.md")) continue;
     const full = join(REPORTS_DIR, name);
     try {
       const { mtimeMs } = statSync(full);
@@ -250,7 +323,7 @@ if (existsSync(REPORTS_DIR)) {
     }
   }
 }
-if (staleSentinels === 0) ok('No stale reservation sentinels');
+if (staleSentinels === 0) ok("无过期保留标记");
 
 // --- Check 9: Duplicate reports for the same company+role (#1425) ---
 // Two concurrent evaluators can each write a report for the same role.
@@ -258,7 +331,7 @@ if (staleSentinels === 0) ok('No stale reservation sentinels');
 // Warning-level, not error: duplicates can be legitimate (re-evaluation
 // after a JD change).
 const REPORT_FILE_RE = /^(\d+)-(.+)-\d{4}-\d{2}-\d{2}\.md$/;
-const normalizeKey = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalizeKey = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 // Role comes from the report body: the Machine Summary YAML fence when
 // present (field names are exact by contract), else the title line
@@ -266,21 +339,24 @@ const normalizeKey = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 // skipped rather than grouped by company alone, which would false-positive
 // on two different roles at the same company.
 function extractRole(reportContent) {
-  const fence = reportContent.match(/##\s*Machine Summary\s*\n+```(?:yaml|yml|json)?\s*\n([\s\S]*?)\n```/i);
+  const fence = reportContent.match(
+    /##\s*Machine Summary\s*\n+```(?:yaml|yml|json)?\s*\n([\s\S]*?)\n```/i,
+  );
   if (fence) {
     const m = fence[1].match(/^role:\s*["']?(.+?)["']?\s*$/m);
     if (m && m[1].trim()) return m[1].trim();
   }
-  const title = reportContent.split('\n').find(l => l.startsWith('# '));
+  const title = reportContent.split("\n").find((l) => l.startsWith("# "));
   if (title) {
     const parts = title.split(/[—–]/);
-    if (parts.length >= 2 && parts[parts.length - 1].trim()) return parts[parts.length - 1].trim();
+    if (parts.length >= 2 && parts[parts.length - 1].trim())
+      return parts[parts.length - 1].trim();
   }
   return null;
 }
 
 const reportFiles = existsSync(REPORTS_DIR)
-  ? readdirSync(REPORTS_DIR).filter(f => REPORT_FILE_RE.test(f))
+  ? readdirSync(REPORTS_DIR).filter((f) => REPORT_FILE_RE.test(f))
   : [];
 
 let dupReports = 0;
@@ -289,22 +365,22 @@ for (const name of reportFiles) {
   const companySlug = name.match(REPORT_FILE_RE)[2];
   let role = null;
   try {
-    role = extractRole(readFileSync(join(REPORTS_DIR, name), 'utf-8'));
+    role = extractRole(readFileSync(join(REPORTS_DIR, name), "utf-8"));
   } catch {
     // Unreadable report — the orphan check below still sees it.
   }
   if (!role) continue;
-  const key = normalizeKey(companySlug) + '::' + normalizeKey(role);
+  const key = normalizeKey(companySlug) + "::" + normalizeKey(role);
   if (!reportsByRole.has(key)) reportsByRole.set(key, []);
   reportsByRole.get(key).push(name);
 }
 for (const group of reportsByRole.values()) {
   if (group.length > 1) {
-    warn(`Duplicate reports for same company+role: ${group.join(', ')}`);
+    warn(`Duplicate reports for same company+role: ${group.join(", ")}`);
     dupReports++;
   }
 }
-if (dupReports === 0) ok('No duplicate reports for the same company+role');
+if (dupReports === 0) ok("无同一公司+岗位的重复报告");
 
 // --- Check 10: Orphan reports with no tracker row (#1425) ---
 // Every reports/NNN-*.md should be referenced by a tracker row — by the row's
@@ -317,7 +393,10 @@ for (const e of entries) {
   if (linkText) referencedNums.add(parseInt(linkText[1], 10));
   const linkTarget = e.report.match(/\]\(([^)]+)\)/);
   if (linkTarget) {
-    const m = linkTarget[1].split('/').pop().match(/^(\d+)-/);
+    const m = linkTarget[1]
+      .split("/")
+      .pop()
+      .match(/^(\d+)-/);
     if (m) referencedNums.add(parseInt(m[1], 10));
   }
 }
@@ -330,17 +409,17 @@ for (const name of reportFiles) {
     orphanReports++;
   }
 }
-if (orphanReports === 0) ok('No orphan reports');
+if (orphanReports === 0) ok("无孤儿报告");
 
 // --- Summary ---
-console.log('\n' + '='.repeat(50));
-console.log(`📊 Pipeline Health: ${errors} errors, ${warnings} warnings`);
+console.log("\n" + "=".repeat(50));
+console.log(`📊 待办健康度：${errors} 个错误，${warnings} 个警告`);
 if (errors === 0 && warnings === 0) {
-  console.log('🟢 Pipeline is clean!');
+  console.log("🟢 待办状态干净！");
 } else if (errors === 0) {
-  console.log('🟡 Pipeline OK with warnings');
+  console.log("🟡 待办正常，但有警告");
 } else {
-  console.log('🔴 Pipeline has errors — fix before proceeding');
+  console.log("🔴 待办存在错误 — 请修复后再继续");
 }
 
 process.exit(errors > 0 ? 1 : 0);

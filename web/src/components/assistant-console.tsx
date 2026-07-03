@@ -33,7 +33,7 @@ const NAV_RE = /<<\s*go:\s*(\/[a-z0-9/_-]*)\s*>>/gi;
 const REMEMBER_RE = /<<\s*remember:\s*([^>]+?)\s*>>/gi;
 
 const GREETING =
-  "Hi — I'm your career-ops assistant. I can walk you through onboarding, answer questions about your pipeline, or take you where you need to go. What would you like to do?";
+  "你好 — 我是你的 career-ops-cn 助手。我可以帮你完成初始化设置、解答求职管线的问题，或者带你前往需要的页面。你想做什么？";
 
 // ── envelope parsing: act ONLY on complete <<act:ID {json}>> envelopes ────────
 function codeRanges(s: string): [number, number][] {
@@ -89,17 +89,17 @@ function removeRanges(s: string, cuts: [number, number][]): string {
 // Page awareness: describe the route so "this offer" / "apply" resolves to what
 // the user is looking at.
 function describePage(p: string): string {
-  if (p === "/") return "Today / home — overview of the user's pipeline.";
-  if (p === "/pipeline") return "Pipeline — the applications table + the inbox of pending job URLs.";
+  if (p === "/") return "今日/首页 — 用户求职管线概览。";
+  if (p === "/pipeline") return "管线 — 申请表格 + 待处理职位 URL 收件箱。";
   const m = p.match(/^\/pipeline\/([^/]+)$/);
   if (m)
-    return `The user is viewing the EVALUATION REPORT for application #${m[1]}. If they say "this offer", "apply", "evaluate it", "draft a cover letter", they mean application #${m[1]} — read reports/${m[1]}-*.md or the matching data/applications.md row and act on THAT one.`;
-  if (p === "/analytics") return "Analytics — funnel, score distribution, top companies.";
-  if (p === "/cv") return "CV editor (cv.md).";
-  if (p === "/config") return "Config — CLI / engine setup.";
-  if (p === "/apply") return "Apply — the form-proxy: the user is reviewing a job application re-rendered in plain language, pre-filled from their CV. You can write/revise answers via setApplyField.";
-  if (p.startsWith("/jobs/")) return "Watching a running worker / evaluation in progress.";
-  return `Route ${p}.`;
+    return `用户正在查看申请 #${m[1]} 的评估报告。如果他们说"这个职位"、"申请"、"评估"、"写求职信"，指的是申请 #${m[1]} — 读取 reports/${m[1]}-*.md 或匹配的 data/applications.md 行，并针对该申请操作。`;
+  if (p === "/analytics") return "分析 — 漏斗、评分分布、热门公司。";
+  if (p === "/cv") return "简历编辑器 (cv.md)。";
+  if (p === "/config") return "配置 — CLI/引擎设置。";
+  if (p === "/apply") return "申请 — 表单代理：用户正在审查以通俗语言重新渲染的求职申请，已从简历预填。你可以通过 setApplyField 编写/修改答案。";
+  if (p.startsWith("/jobs/")) return "正在查看运行中的工作/评估进度。";
+  return `路由 ${p}。`;
 }
 
 // ── persistence migration: old {role,content:string} → parts[] ────────────────
@@ -349,7 +349,7 @@ export function AssistantConsole() {
       });
       if (!res.ok || !res.body) {
         const err = await res.json().catch(() => ({}));
-        setStreamText(`⚠️ ${err.error || "Assistant unavailable."}`);
+        setStreamText(`⚠️ ${err.error || "助手不可用。"}`);
         return;
       }
       const reader = res.body.getReader();
@@ -405,9 +405,9 @@ export function AssistantConsole() {
           }
         }
       }
-      if (!acc.trim()) setStreamText("_(no output — is the CLI authenticated?)_");
+      if (!acc.trim()) setStreamText("_(无输出 — CLI 是否已认证？)_");
     } catch {
-      setStreamText("⚠️ Connection error.");
+      setStreamText("⚠️ 连接错误。");
     } finally {
       setBusy(false);
       router.refresh();
@@ -444,28 +444,28 @@ export function AssistantConsole() {
     const chips: { label: string; send: string }[] = [];
     const rep = pathname.match(/^\/pipeline\/(.+)$/);
     if (rep) {
-      chips.push({ label: "Why this score?", send: "Walk me through why this offer scored the way it did — strengths and red flags." });
-      chips.push({ label: "Should I apply?", send: "Given my profile, should I apply to this one? Be honest." });
-      chips.push({ label: "Draft a cover letter", send: "Draft a short, sharp cover letter for this role." });
+      chips.push({ label: "为什么这个评分？", send: "帮我分析这个职位的评分依据 — 优势和风险点。" });
+      chips.push({ label: "应该投递吗？", send: "根据我的背景，我应该投递这个职位吗？说实话。" });
+      chips.push({ label: "写求职信", send: "为这个职位写一封简短有力的求职信。" });
       return chips;
     }
     const pending = pipeline.inbox.filter((j) => !j.done);
     if (!pipeline.applications.length && !pending.length) {
       return [
-        { label: "Help me get set up", send: "Help me get started with career-ops — what do you need from me?" },
-        { label: "Improve my CV", send: "Look at my CV and suggest the highest-impact improvements." },
+        { label: "帮我设置", send: "帮我开始使用 career-ops-cn — 你需要我提供什么？" },
+        { label: "优化我的简历", send: "看看我的简历，给出最有价值的改进建议。" },
       ];
     }
     if (pending.length) {
       const counts = new Map<string, number>();
       for (const j of pending) counts.set(j.company, (counts.get(j.company) ?? 0) + 1);
       const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-      if (top && top[1] > 1) chips.push({ label: `Evaluate all ${top[0]} (${top[1]})`, send: `Evaluate all the pending ${top[0]} postings in my inbox.` });
-      chips.push({ label: `Triage inbox (${pending.length})`, send: `I have ${pending.length} postings in my inbox — which should I evaluate first, and why?` });
+      if (top && top[1] > 1) chips.push({ label: `评估所有 ${top[0]} (${top[1]})`, send: `评估我收件箱中所有待处理的 ${top[0]} 职位。` });
+      chips.push({ label: `整理收件箱 (${pending.length})`, send: `我有 ${pending.length} 个职位在收件箱 — 哪些应该优先评估，为什么？` });
     }
     const strong = pipeline.applications.filter((a) => scoreNum(a.score) >= 4.5).length;
-    if (strong) chips.push({ label: "Strong matches to act on", send: "Show me my strongest matches (4.5+) I haven't applied to yet, and tell me which to prioritise." });
-    chips.push({ label: "What should I do today?", send: "Look at my pipeline and tell me the 3 highest-leverage things I should do today." });
+    if (strong) chips.push({ label: "强匹配待处理", send: "给我看我还没投递的强匹配（4.5+），告诉我应该优先哪些。" });
+    chips.push({ label: "今天该做什么？", send: "看看我的管线，告诉我今天最该做的 3 件事。" });
     return chips.slice(0, 4);
   }, [pathname, pipeline.inbox, pipeline.applications]);
 
@@ -475,10 +475,10 @@ export function AssistantConsole() {
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full border border-border bg-surface/90 py-1.5 pl-1.5 pr-4 shadow-lg backdrop-blur transition-colors hover:bg-surface-hover"
-          aria-label="Open assistant"
+          aria-label="打开助手"
         >
           <CoMark size={26} />
-          <span className="text-sm font-medium">Ask</span>
+          <span className="text-sm font-medium">提问</span>
         </button>
       )}
 
@@ -487,13 +487,13 @@ export function AssistantConsole() {
           <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
             <CoMark size={26} />
             <div className="flex-1">
-              <div className="text-sm font-semibold tracking-tight">Assistant</div>
-              <div className="text-xs text-faint">{cliId ? `via ${cliId}` : "no CLI configured"}</div>
+              <div className="text-sm font-semibold tracking-tight">助手</div>
+              <div className="text-xs text-faint">{cliId ? `via ${cliId}` : "未配置 CLI"}</div>
             </div>
-            <button onClick={resetChat} className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground" aria-label="New chat" title="New chat">
+            <button onClick={resetChat} className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground" aria-label="新对话" title="新对话">
               <RotateCcw className="size-4" />
             </button>
-            <button onClick={() => setOpen(false)} className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground" aria-label="Close assistant">
+            <button onClick={() => setOpen(false)} className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground" aria-label="关闭助手">
               <X className="size-4" />
             </button>
           </header>
@@ -549,7 +549,7 @@ export function AssistantConsole() {
               onClick={() => setOpen(false)}
               className="mx-4 mb-2 flex items-center gap-2 rounded-lg border border-border bg-surface/50 px-3 py-2 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
             >
-              <Settings className="size-3.5" /> Pick a CLI in Config to enable the assistant →
+              <Settings className="size-3.5" /> 在配置中选择 CLI 启用助手 →
             </Link>
           )}
 
@@ -564,7 +564,7 @@ export function AssistantConsole() {
                     send();
                   }
                 }}
-                placeholder={cliId ? "Ask anything…" : "Configure a CLI first"}
+                placeholder={cliId ? "随便问…" : "请先配置 CLI"}
                 rows={1}
                 disabled={!cliId}
                 className="max-h-32 flex-1 resize-none rounded-xl border border-border bg-surface/60 px-3 py-2 text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50 disabled:opacity-50"
@@ -573,7 +573,7 @@ export function AssistantConsole() {
                 onClick={() => send()}
                 disabled={busy || !input.trim() || !cliId}
                 className="rounded-xl bg-brand p-2 text-brand-foreground transition-colors hover:bg-brand-200 disabled:opacity-40"
-                aria-label="Send"
+                aria-label="发送"
               >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </button>
@@ -612,7 +612,7 @@ function PartView({
     if (!job)
       return (
         <Link href={`/jobs/${part.jobId}`} className="block rounded-xl border border-border bg-surface/40 p-2.5 text-xs text-faint hover:text-foreground">
-          Worker finished earlier — open log →
+          工作已完成 — 打开日志 →
         </Link>
       );
     return (
@@ -620,7 +620,7 @@ function PartView({
         job={job}
         variant="inline"
         trailing={
-          <Link href={`/jobs/${job.id}`} className="text-faint transition-colors hover:text-brand" aria-label="Open worker">
+          <Link href={`/jobs/${job.id}`} className="text-faint transition-colors hover:text-brand" aria-label="打开工作">
             <ArrowUpRight className="size-3.5" />
           </Link>
         }
@@ -634,9 +634,9 @@ function PartView({
       <div className="rounded-xl border border-border bg-surface/40 p-2.5">
         <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium">
           <Sparkles className="size-3.5 text-brand" />
-          {part.jobIds.length} evaluations
+          {part.jobIds.length} 个评估
           <span className="ml-auto tabular-nums text-faint">
-            {done}/{part.jobIds.length} done
+            {done}/{part.jobIds.length} 完成
           </span>
         </div>
         <div className="space-y-1.5">
@@ -646,7 +646,7 @@ function PartView({
               job={j!}
               variant="inline"
               trailing={
-                <Link href={`/jobs/${j!.id}`} className="text-faint transition-colors hover:text-brand" aria-label="Open worker">
+                <Link href={`/jobs/${j!.id}`} className="text-faint transition-colors hover:text-brand" aria-label="打开工作">
                   <ArrowUpRight className="size-3.5" />
                 </Link>
               }
@@ -666,17 +666,17 @@ function PartView({
               onClick={() => onConfirm(part.cid, true)}
               className="rounded-full bg-brand px-3 py-1 text-xs font-medium text-brand-foreground transition-colors hover:bg-brand-200"
             >
-              Confirm
+              确认
             </button>
             <button
               onClick={() => onConfirm(part.cid, false)}
               className="rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
             >
-              Cancel
+              取消
             </button>
           </div>
         ) : (
-          <div className="mt-1 text-xs text-faint">{part.state === "done" ? "✓ started" : "cancelled"}</div>
+          <div className="mt-1 text-xs text-faint">{part.state === "done" ? "✓ 已开始" : "已取消"}</div>
         )}
       </div>
     );

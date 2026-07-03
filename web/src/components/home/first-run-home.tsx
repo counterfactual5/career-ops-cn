@@ -19,15 +19,14 @@ export function FirstRunHome() {
         <div aria-hidden className="pointer-events-none absolute inset-0 z-[1] bg-surface/55 backdrop-blur-[2px] dark:bg-background/45" />
         <div className="relative z-10">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-            <span className="text-faint">//</span> local-first · your machine
+            <span className="text-faint">//</span> 本地优先 · 你的机器
           </p>
           <h1 className={`${instrumentSerif.className} mt-3 text-4xl leading-[1.05] text-landing md:text-5xl`}>
-            Drop your CV. See who&apos;s hiring you in 60 seconds.
+            上传简历，60 秒内发现适合你的岗位。
           </h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
-            No account. No setup. Your CV is parsed once on your own AI, then we scan the live job market for roles
-            that fit you — <span className="text-foreground">that part&apos;s free</span>. You only spend tokens again
-            when you choose to score a role.
+            无需注册，无需配置。你的简历仅在本地 AI 上解析一次，然后扫描实时招聘市场
+            —— <span className="text-foreground">这部分完全免费</span>。只有当你选择评估某个岗位时，才会消耗 tokens。
           </p>
           <div className="mt-7">
             <CvIngest />

@@ -1,35 +1,16 @@
-# career-ops — Plugin activation (opt-in)
+# career-ops-cn — 插件系统说明
 #
-#   cp config/plugins.example.yml config/plugins.yml
+# ⚠️ 本项目不支持插件系统。
 #
-# Plugins are OFF by default. The core runs zero-keys and local-first; plugins
-# are the opt-in home for integrations that need a key or talk to an external
-# service. Two gates must both be satisfied for a plugin to load:
-#   1. Enable it here (enabled: true) + any non-secret settings.
-#   2. Put the SECRET values (API keys/tokens) in your .env — NEVER here.
-#      Each plugin declares which env vars it needs; see .env.example and
-#      `node doctor.mjs` (lists every plugin + whether its keys are present).
+# 原版 career-ops 有一个插件机制（apify、notion、gmail 等），用于扩展
+# 职位来源和数据同步。career-ops-cn 走 Agent 驱动路线，不需要这些集成：
 #
-# config/plugins.yml is yours: gitignored, never auto-updated. Bundled plugins
-# live in plugins/; your own private plugins go in plugins.local/.
-
-plugins:
-  # ── apify (provider) ── keyed job source via an Apify actor. (feature #791, ported from PR #693)
-  # Needs APIFY_TOKEN in .env. Fires only on a portals.yml entry with `provider: apify`
-  # (the actor + field_map live on that portals.yml entry, not here).
-  apify:
-    enabled: false
-
-  # ── notion (export + search) ── mirror your tracker to a Notion DB / read records. (features #667/#668, ported from PR #959)
-  # Needs NOTION_ACCESS_TOKEN + NOTION_PARENT_PAGE_ID in .env. Run via `node plugins.mjs run notion export`.
-  # The DB is resolved by NAME ("Applications") under your parent page — no id needed here.
-  notion:
-    enabled: false
-
-  # ── gmail (ingest) ── pull job leads from a Gmail label into your pipeline. (feature #810, ported from PR #1203)
-  # Needs GMAIL_CLIENT_ID + GMAIL_CLIENT_SECRET + GMAIL_REFRESH_TOKEN in .env.
-  # Run via `node plugins.mjs run gmail`.
-  gmail:
-    enabled: false
-    # label: "Job Leads"     # the Gmail label to scan
-    # days_back: 7           # how far back to look
+#   - 职位来源：用户主动截图/粘贴 JD，无需 apify 扫描
+#   - 数据同步：本地文件优先（data/、reports/），无需 notion 镜像
+#   - 邮件导入：通过 Agent 直接读取或粘贴，无需 gmail API
+#
+# 如果你确实需要某个原版插件的等价功能，可以：
+#   1. 让 Agent 在对话中帮你完成对应任务（推荐）
+#   2. 自行编写脚本放到 scripts/ 目录下
+#
+# 此文件保留是为了让从原版迁移过来的用户了解差异。

@@ -3,15 +3,15 @@ import { canonStatus, scoreNum } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-const STAGES: { key: string; label: string }[] = [
-  { key: "EVALUATED", label: "Evaluated" },
-  { key: "APPLIED", label: "Applied" },
-  { key: "RESPONDED", label: "Responded" },
-  { key: "INTERVIEW", label: "Interview" },
-  { key: "OFFER", label: "Offer" },
-  { key: "REJECTED", label: "Rejected" },
-  { key: "DISCARDED", label: "Discarded" },
-];
+  const STAGES: { key: string; label: string }[] = [
+    { key: "EVALUATED", label: "已评估" },
+    { key: "APPLIED", label: "已投递" },
+    { key: "RESPONDED", label: "已回复" },
+    { key: "INTERVIEW", label: "面试中" },
+    { key: "OFFER", label: "已录用" },
+    { key: "REJECTED", label: "已拒绝" },
+    { key: "DISCARDED", label: "已放弃" },
+  ];
 
 export default function Analytics() {
   const { applications } = pipelineSummary();
@@ -43,30 +43,30 @@ export default function Analytics() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="font-display text-2xl tracking-tight text-landing">Analytics</h1>
-      <p className="mt-1 text-sm text-muted">Across {total} tracked evaluations.</p>
+      <h1 className="font-display text-2xl tracking-tight text-landing">分析</h1>
+      <p className="mt-1 text-sm text-muted">共 {total} 条追踪记录。</p>
 
       {/* headline stats */}
       <div className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat value={total} label="evaluated" />
-        <Stat value={avg ? avg.toFixed(2) : "—"} label="avg score" />
-        <Stat value={interviews} label="interviews" />
-        <Stat value={offers} label="offers" />
+        <Stat value={total} label="已评估" />
+        <Stat value={avg ? avg.toFixed(2) : "—"} label="平均评分" />
+        <Stat value={interviews} label="面试中" />
+        <Stat value={offers} label="已录用" />
       </div>
 
-      <Section title="Pipeline by stage">
+      <Section title="各阶段分布">
         {stageCounts.map((s) => (
           <Bar key={s.key} label={s.label} value={s.n} pct={(s.n / maxStage) * 100} total={total} />
         ))}
       </Section>
 
-      <Section title="Score distribution">
+      <Section title="评分分布">
         {buckets.map((b) => (
           <Bar key={b.label} label={b.label} value={b.n} pct={(b.n / maxBucket) * 100} total={scores.length} />
         ))}
       </Section>
 
-      <Section title="Top companies" id="companies">
+      <Section title="投递最多的公司" id="companies">
         {topCompanies.map(([name, n]) => (
           <Bar key={name} label={name} value={n} pct={(n / maxCompany) * 100} />
         ))}

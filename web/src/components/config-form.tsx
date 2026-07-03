@@ -85,37 +85,37 @@ export function ConfigForm() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="font-display text-2xl tracking-tight text-landing">Config</h1>
+      <h1 className="font-display text-2xl tracking-tight text-landing">配置</h1>
       <p className="mt-1 text-sm text-muted">
-        career-ops is CLI-agnostic — it runs on your own AI, locally. Nothing leaves your machine.
+        career-ops-cn 是 CLI 无关的 — 在你自己的 AI 上运行，本地优先。数据不离开你的机器。
       </p>
 
-      {/* Engine mode */}
+      {/* 引擎模式 */}
       <label className="mt-8 mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        Engine
+        引擎
       </label>
       <div className="grid gap-2 sm:grid-cols-3">
         <ModeCard
           active={mode === "cli"}
           onClick={() => setMode("cli")}
           icon={Terminal}
-          title="Installed CLI"
-          hint="Recommended"
+          title="已安装的 CLI"
+          hint="推荐"
         />
         <ModeCard
           active={mode === "key"}
           onClick={() => setMode("key")}
           icon={KeyRound}
-          title="API key"
-          hint="Coming soon"
+          title="API 密钥"
+          hint="即将推出"
           disabled
         />
         <ModeCard
           active={mode === "manual"}
           onClick={() => setMode("manual")}
           icon={TerminalSquare}
-          title="Keyless"
-          hint="Coming soon"
+          title="无密钥模式"
+          hint="即将推出"
           disabled
         />
       </div>
@@ -124,12 +124,11 @@ export function ConfigForm() {
         {mode === "cli" && (
           <div>
             <p className="mb-3 text-sm text-muted">
-              career-ops runs through whichever AI coding CLI you already use — already authenticated,
-              your own tokens, nothing to paste. Detected on this machine:
+              career-ops-cn 通过你已有的 AI 编程 CLI 运行 — 已认证，使用你自己的 tokens，无需粘贴任何内容。本机检测到：
             </p>
             {clis === null ? (
               <div className="flex items-center gap-2 text-sm text-muted">
-                <Loader2 className="size-4 animate-spin" /> Scanning your PATH…
+                <Loader2 className="size-4 animate-spin" /> 正在扫描 PATH…
               </div>
             ) : (
               <div className="space-y-2">
@@ -182,7 +181,7 @@ export function ConfigForm() {
                           rel="noreferrer"
                           className="inline-flex shrink-0 items-center gap-1 text-xs text-brand hover:underline"
                         >
-                          Install <ExternalLink className="size-3" />
+                          安装 <ExternalLink className="size-3" />
                         </a>
                       )}
                     </div>
@@ -190,12 +189,12 @@ export function ConfigForm() {
                 })}
                 {installed.length === 0 && (
                   <p className="rounded-xl border border-dashed border-border bg-surface/30 p-4 text-xs text-muted">
-                    No supported CLI found on your PATH. Install one (e.g. Claude Code, Gemini CLI, OpenCode) to get started.
+                    PATH 中未找到支持的 CLI。安装一个（如 Claude Code、Gemini CLI、OpenCode）以开始使用。
                   </p>
                 )}
                 <p className="mt-2 text-[11px] leading-relaxed text-faint">
-                  Best on <span className="text-muted">Claude Code</span> (live progress, the agentic apply + AI search,
-                  reliable evaluation persistence). Other CLIs work for the core flows with reduced features.
+                  最佳体验使用 <span className="text-muted">Claude Code</span>（实时进度、agentic 投递 + AI 搜索、
+                  可靠的评估持久化）。其他 CLI 支持核心流程，但功能有所减少。
                 </p>
               </div>
             )}
@@ -206,7 +205,7 @@ export function ConfigForm() {
           <div className="space-y-5">
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                Provider
+                提供商
               </label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {PROVIDERS.map((p) => (
@@ -228,7 +227,7 @@ export function ConfigForm() {
             </div>
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-                API key
+                API 密钥
               </label>
               <input
                 type="password"
@@ -239,7 +238,7 @@ export function ConfigForm() {
                 className="w-full rounded-xl border border-border bg-surface/60 px-4 py-2.5 font-mono text-sm outline-none transition-colors placeholder:text-faint focus:border-brand/50"
               />
               <p className="mt-2 text-xs text-faint">
-                Stored only in this browser — never sent anywhere but your chosen provider.
+                仅保存在此浏览器中 — 除了你选择的提供商外，不会发送到任何地方。
               </p>
             </div>
           </div>
@@ -247,15 +246,14 @@ export function ConfigForm() {
 
         {mode === "manual" && (
           <div className="rounded-xl border border-dashed border-border bg-surface/30 p-4 text-sm text-muted">
-            Keyless mode: career-ops generates the prompts and you paste them into whichever AI tool
-            you already use, then paste the result back. Zero keys, zero cost beyond what you already pay.
+            无密钥模式：career-ops-cn 生成提示词，你粘贴到已有的 AI 工具中，然后将结果粘贴回来。零密钥，零额外成本。
           </div>
         )}
       </div>
 
-      {/* Appearance / privacy */}
+      {/* 外观 / 隐私 */}
       <label className="mt-8 mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        Appearance
+        外观
       </label>
       <button
         type="button"
@@ -263,10 +261,9 @@ export function ConfigForm() {
         className="flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-surface/50 px-4 py-3 text-left transition-colors hover:bg-surface-hover"
       >
         <span className="min-w-0">
-          <span className="block text-sm font-medium text-foreground">Company logos</span>
+          <span className="block text-sm font-medium text-foreground">公司 Logo</span>
           <span className="mt-0.5 block text-xs text-faint">
-            Show each company&apos;s real logo. Fetched once through your local server and cached on
-            disk — only the employer domain is sent to a third party. Off = colored monograms only.
+            显示每家公司的真实 Logo。通过本地服务器获取一次并缓存在磁盘上 — 仅将雇主域名发送给第三方。关闭 = 仅显示彩色字母缩写。
           </span>
         </span>
         <span
@@ -291,9 +288,9 @@ export function ConfigForm() {
           className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-200"
         >
           {saved ? <Check className="size-4" /> : null}
-          {saved ? "Saved" : "Save config"}
+          {saved ? "已保存" : "保存配置"}
         </button>
-        <span className="text-xs text-faint">Local-first · on the #156 roadmap</span>
+        <span className="text-xs text-faint">本地优先 · 在 #156 路线图中</span>
       </div>
     </div>
   );

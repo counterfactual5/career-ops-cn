@@ -40,7 +40,7 @@ export function ExplorerView({
   const { filters, setFilters, initFilters, phase, running, offers, discover, status, error, mode, setMode, aiIntent, setAiIntent, discoverAI, companiesScanned, companiesAvailable, capHit, droppedNoDate, partial } = useExplore();
   const scanNote =
     companiesScanned > 0
-      ? `Scanned ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} compan${companiesScanned === 1 ? "y" : "ies"}${partial ? " · some sources were unreachable" : ""}.`
+      ? `已扫描 ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` / ${companiesAvailable.toLocaleString()}` : ""} 家公司${partial ? " · 部分源不可达" : ""}。`
       : undefined;
   const inited = useRef(false);
   const [refineOpen, setRefineOpen] = useState(false);
@@ -106,8 +106,8 @@ export function ExplorerView({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2.5">
             <Compass className="size-6 text-brand" />
-            <h1 className={`${instrumentSerif.className} text-3xl text-foreground`}>Explore</h1>
-            <span className="rounded-full border border-brand/30 bg-brand-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand">New</span>
+            <h1 className={`${instrumentSerif.className} text-3xl text-foreground`}>发现</h1>
+            <span className="rounded-full border border-brand/30 bg-brand-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand">新</span>
           </div>
           <div className="w-full sm:ml-auto sm:w-auto">
             <ExploreModeToggle mode={mode} onChange={setMode} cliConfigured={!!cli.id} />
@@ -116,15 +116,15 @@ export function ExplorerView({
         {!isResults && (
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
             {isAi
-              ? "Describe the role in plain language — an AI hunts the open web for it, on your own AI. Candidates are unverified until you evaluate."
-              : "Scan the public ATS network — Greenhouse, Lever, Ashby, Workday. Fresh postings matched to you, zero tokens. You only spend when you choose to evaluate one."}
+              ? "用自然语言描述职位 — AI 会用你自己的 AI 在公开网络上搜索。候选职位在评估前未经验证。"
+              : "扫描公开 ATS 网络 — Greenhouse、Lever、Ashby、Workday。与你的简历匹配的新职位，零 token 消耗。只有当你选择评估时才消耗 token。"}
           </p>
         )}
       </header>
 
       {!rootExists && (
         <div className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-          Your career-ops home isn’t set up yet — discovery needs a checkout with a profile to seed from.
+          你的 career-ops-cn 主目录还未设置 — 发现功能需要一个包含 profile 的 checkout 来种子。
         </div>
       )}
 
@@ -145,10 +145,10 @@ export function ExplorerView({
             {phase === "empty-loose" && (
               <EmptyState
                 tone="loose"
-                title="No public matches — yet."
-                body="AI search reads what's public. Try broader intent, or run the free Scan over the ATS network."
+                title="暂无公开匹配。"
+                body="AI 搜索只读取公开信息。尝试更宽泛的描述，或运行免费的扫描覆盖 ATS 网络。"
                 onRerun={() => setMode("scan")}
-                rerunLabel="Run the free Scan"
+                rerunLabel="运行免费扫描"
               />
             )}
             {phase === "failed" && <FailedCard msg={error || status} onRetry={() => void discoverAI()} />}
@@ -159,13 +159,13 @@ export function ExplorerView({
           {isResults ? (
             <div className="mb-6 rounded-xl border border-border bg-surface/30">
               <button type="button" onClick={() => setRefineOpen((v) => !v)} className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-foreground">
-                <Compass className="size-4 text-brand" /> Refine search
+                <Compass className="size-4 text-brand" /> 优化搜索
                 <ChevronDown className={cn("ml-auto size-4 text-muted transition-transform", refineOpen && "rotate-180")} />
               </button>
               {refineOpen && (
                 <div className="space-y-4 border-t border-border p-4">
                   <FilterBuilder filters={filters} onChange={setFilters} seededFrom={seed.seededFrom} />
-                  <DiscoverBar canDiscover={canDiscover} onDiscover={discover} label="Re-cast (free)" />
+                  <DiscoverBar canDiscover={canDiscover} onDiscover={discover} label="重新搜索（免费）" />
                 </div>
               )}
             </div>
@@ -173,7 +173,7 @@ export function ExplorerView({
             <div className="mb-6 rounded-2xl border border-border bg-surface/30 p-5">
               <FilterBuilder filters={filters} onChange={setFilters} seededFrom={seed.seededFrom} />
               <div className="mt-5">
-                <DiscoverBar canDiscover={canDiscover} onDiscover={discover} label="Discover (free)" />
+                <DiscoverBar canDiscover={canDiscover} onDiscover={discover} label="发现（免费）" />
               </div>
             </div>
           )}
@@ -182,7 +182,7 @@ export function ExplorerView({
             <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
               <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-500" />
               <p className="text-[13px] leading-relaxed text-foreground">
-                These are live roles that match your CV. <span className="text-emerald-600 dark:text-emerald-400">Nothing here cost you a token.</span> Pick the one you&apos;re most curious about — Evaluate it and I&apos;ll tell you exactly how you score, and why.
+                这些是与你的简历匹配的实时职位。 <span className="text-emerald-600 dark:text-emerald-400">这些没有消耗任何 token。</span> 选择你最感兴趣的 — 评估它，我会告诉你具体得分和原因。
               </p>
             </div>
           )}
@@ -195,27 +195,27 @@ export function ExplorerView({
           {phase === "empty-current" && (
             <EmptyState
               tone="good"
-              title="You're all caught up."
-              body="Nothing new since your last scan. Your pipeline is current — that's the goal."
+              title="全部已处理。"
+              body="自上次扫描以来没有新内容。你的管线已是最新 — 这正是目标。"
               note={scanNote}
               onRerun={() => {
                 setFilters({ ...filters, sinceDays: Math.max(filters.sinceDays, 30) });
                 void discover();
               }}
-              rerunLabel="Look back 30 days"
+              rerunLabel="查看近 30 天"
             />
           )}
           {phase === "empty-loose" && (
             <EmptyState
               tone="loose"
-              title="No fresh matches — yet."
-              body="Discovery is free — loosen and re-cast as often as you want."
+              title="暂无新匹配。"
+              body="发现是免费的 — 随时放宽条件重新搜索。"
               note={scanNote}
               onRerun={() => {
                 setFilters({ ...filters, sinceDays: 30, block: [], allow: [] });
                 void discover();
               }}
-              rerunLabel="Widen to 30 days · clear location"
+              rerunLabel="扩大到 30 天 · 清除地点"
             />
           )}
           {phase === "degraded" && (
@@ -248,7 +248,7 @@ function DiscoverBar({ canDiscover, onDiscover, label }: { canDiscover: boolean;
       </button>
       <span className="inline-flex items-center gap-1.5 text-[12px] text-muted">
         <span className="size-1.5 rounded-full bg-emerald-500" />
-        Evaluating a role later costs tokens. Discovering never does.
+        后续评估消耗 token。发现永远免费。
       </span>
     </div>
   );
@@ -288,18 +288,18 @@ function DegradedCard({
   // 0 results, but the scan was NOT a clean full search → never "all caught up".
   // Pick the most informative reason (authoritative when the scanner's --json mode
   // is available; otherwise the 0-companies fallback).
-  let title = "The scan ran, but couldn’t reach any sources.";
+let title = "扫描已运行，但无法访问任何源。";
   let body =
-    "The public ATS directories didn’t respond — usually a transient network hiccup or rate-limit, so nothing could be searched. This isn’t “all caught up”; a retry in a moment usually clears it.";
+    "公开 ATS 目录未响应 — 通常是短暂的网络波动或限速，所以无法搜索。这不是“全部处理完毕”；稍后重试通常会解决。";
   if (companiesScanned > 0 && capHit) {
-    title = "No matches in the slice we searched.";
-    body = `The scan is capped, so it only searched ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} companies — not the whole network. Raise scan depth (Refine search) or narrow your roles, then re-cast to look deeper.`;
+    title = "在搜索片段中未找到匹配。";
+    body = `扫描有上限，只搜索了 ${companiesScanned.toLocaleString()}${companiesAvailable > companiesScanned ? ` / ${companiesAvailable.toLocaleString()}` : ""} 家公司 — 不是整个网络。提高扫描深度（优化搜索）或收窄职位范围，然后重新搜索以深入查找。`;
   } else if (companiesScanned > 0 && droppedNoDate > 0) {
-    title = "Fresh-looking roles were skipped for missing dates.";
-    body = `${droppedNoDate.toLocaleString()} posting${droppedNoDate === 1 ? "" : "s"} matched but had no clear publish date, so the freshness filter dropped them. Widening the time window often brings dated equivalents back.`;
+    title = "看起来新鲜的职位因缺少日期被跳过。";
+    body = `${droppedNoDate.toLocaleString()} 个职位匹配但没有明确的发布日期，所以新鲜度过滤丢弃了它们。扩大时间窗口通常会带回带日期的等效职位。`;
   } else if (companiesScanned > 0 && partial) {
-    title = "Some job boards were unreachable.";
-    body = `The scan searched ${companiesScanned.toLocaleString()} companies, but one or more sources didn’t respond — so this is a partial result, not “all caught up”. A retry usually clears it.`;
+    title = "部分招聘网站不可达。";
+    body = `扫描搜索了 ${companiesScanned.toLocaleString()} 家公司，但一个或多个源未响应 — 所以这是部分结果，不是“全部处理完毕”。重试通常会解决。`;
   }
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-center">
@@ -307,7 +307,7 @@ function DegradedCard({
       <p className="mt-2 text-sm font-medium text-foreground">{title}</p>
       <p className="mx-auto mt-1 max-w-md text-[13px] text-muted">{body}</p>
       <button onClick={onRetry} className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-brand-soft px-3 py-1.5 text-sm font-medium text-brand">
-        <RotateCcw className="size-4" /> Retry the scan
+        <RotateCcw className="size-4" /> 重试扫描
       </button>
     </div>
   );
@@ -319,11 +319,11 @@ function CappedBanner({ companiesScanned, companiesAvailable, onRefine }: { comp
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-2.5 text-[13px]">
       <span className="text-foreground">
-        Showing a capped slice — searched {companiesScanned.toLocaleString()}
-        {companiesAvailable > companiesScanned ? ` of ${companiesAvailable.toLocaleString()}` : ""} companies.
+        显示上限片段 — 已搜索 {companiesScanned.toLocaleString()}
+        {companiesAvailable > companiesScanned ? ` / ${companiesAvailable.toLocaleString()}` : ""} 家公司。
       </span>
       <button onClick={onRefine} className="font-medium text-brand hover:underline">
-        Raise scan depth to search deeper
+        提高扫描深度以搜索更多
       </button>
     </div>
   );
@@ -339,17 +339,17 @@ function FailedCard({ msg, onRetry }: { msg: string; onRetry: () => void }) {
         <div className="mx-auto grid size-12 place-items-center rounded-full bg-brand-soft text-brand">
           <Compass className="size-6" />
         </div>
-        <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>Discovery needs the full toolkit</h2>
+        <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>发现需要完整工具</h2>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">
-          Your career-ops home looks data-only or is on an older version. The free scanner ships with a complete checkout —
-          update career-ops, or paste a job URL on the pipeline to evaluate it directly.
+          你的 career-ops-cn 主目录看起来是 data-only 或旧版本。免费扫描器随完整 checkout 附带 —
+          更新 career-ops-cn，或在管线中粘贴职位 URL 直接评估。
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <Link href="/pipeline" className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-110">
-            Open pipeline
+            打开管线
           </Link>
           <Link href="/config" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground transition hover:border-brand/40 hover:text-brand">
-            Open Config
+            打开配置
           </Link>
         </div>
       </div>
@@ -358,10 +358,10 @@ function FailedCard({ msg, onRetry }: { msg: string; onRetry: () => void }) {
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-center">
       <AlertTriangle className="mx-auto size-6 text-amber-500" />
-      <p className="mt-2 text-sm font-medium text-foreground">Couldn’t finish the search.</p>
+<p className="mt-2 text-sm font-medium text-foreground">无法完成搜索。</p>
       <p className="mt-1 text-[13px] text-muted">{msg}</p>
       <button onClick={onRetry} className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-brand-soft px-3 py-1.5 text-sm font-medium text-brand">
-        <RotateCcw className="size-4" /> Try again
+        <RotateCcw className="size-4" /> 重试
       </button>
     </div>
   );
@@ -373,12 +373,12 @@ function BlockedCard() {
       <div className="mx-auto grid size-12 place-items-center rounded-full bg-brand-soft text-brand">
         <Sparkles className="size-6" />
       </div>
-      <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>AI search needs a CLI</h2>
+      <h2 className={`${instrumentSerif.className} mt-4 text-2xl text-foreground`}>AI 搜索需要 CLI</h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted">
-        Connect Claude Code, Gemini, or any agent CLI — your key, your tokens, your machine. The free Scan stays available without one.
+        连接 Claude Code、Gemini 或任何代理 CLI — 你的 key、你的 token、你的机器。免费扫描不需要 CLI。
       </p>
       <Link href="/config" className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:brightness-110">
-        <Settings className="size-4" /> Open Config
+        <Settings className="size-4" /> 打开配置
       </Link>
     </div>
   );
