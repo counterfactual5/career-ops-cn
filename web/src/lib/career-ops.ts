@@ -31,7 +31,7 @@ export function rootScript(nameNoExt: string): string {
 // the local script source — older checkouts lack it, so the delete UI hides itself.
 export function trackerCanDelete(): boolean {
   try {
-    const src = fs.readFileSync(rootScript("tracker"), "utf8");
+    const src = fs.readFileSync(rootScript("tracker/tracker"), "utf8");
     return src.includes("delete") && src.includes("--num");
   } catch {
     return false;
@@ -46,7 +46,14 @@ function read(rel: string): string | null {
   }
 }
 
-export type InboxJob = { url: string; company: string; role: string; location?: string; compensation?: string; done: boolean };
+export type InboxJob = {
+  url: string;
+  company: string;
+  role: string;
+  location?: string;
+  compensation?: string;
+  done: boolean;
+};
 
 /** Parse data/pipeline.md — `- [ ] URL | Company | Role [| Location [| Compensation]]`.
  *  Positional split (NOT a greedy trailing group): the optional 4th `location`
@@ -97,13 +104,26 @@ export function readApplications(): Application[] {
   for (const raw of md.split("\n")) {
     const line = raw.trim();
     if (!line.startsWith("|")) continue;
-    const cells = line.split("|").slice(1, -1).map((c) => c.trim());
+    const cells = line
+      .split("|")
+      .slice(1, -1)
+      .map((c) => c.trim());
     // Tolerate both layouts: the current 9-col tracker and older variants
     // where the Notes column is absent (8 cells). Score is always before Status.
     if (cells.length < 8) continue;
     if (cells[0] === "#" || /^:?-{2,}:?$/.test(cells[0])) continue; // header / separator
     const [n, date, company, role, score, status, pdf, report, ...rest] = cells;
-    rows.push({ n, date, company, role, score, status, pdf, report, notes: rest.join(" | ") });
+    rows.push({
+      n,
+      date,
+      company,
+      role,
+      score,
+      status,
+      pdf,
+      report,
+      notes: rest.join(" | "),
+    });
   }
   return rows;
 }
@@ -147,11 +167,19 @@ export function doctorState(): {
     ["modes/_profile.md", "modes/_profile.md"],
     ["portals.yml", "portals.yml"],
   ];
-  const missing = prereqs.filter(([rel]) => !has(rel)).map(([, label]) => label);
+  const missing = prereqs
+    .filter(([rel]) => !has(rel))
+    .map(([, label]) => label);
   const hasCv = has("cv.md");
-  const hasData = readApplications().length > 0 || readInbox().some((j) => !j.done);
+  const hasData =
+    readApplications().length > 0 || readInbox().some((j) => !j.done);
   const onboardingNeeded = missing.length > 0;
-  const phase: LifecyclePhase = !hasCv && !hasData ? "first-run" : onboardingNeeded ? "in-between" : "established";
+  const phase: LifecyclePhase =
+    !hasCv && !hasData
+      ? "first-run"
+      : onboardingNeeded
+        ? "in-between"
+        : "established";
   return { phase, onboardingNeeded, missing, hasCv, hasData };
 }
 
@@ -185,7 +213,9 @@ export function findReportFile(n: string): string | null {
   } catch {
     return null;
   }
-  const match = files.find((f) => f.endsWith(".md") && parseInt(f, 10) === target);
+  const match = files.find(
+    (f) => f.endsWith(".md") && parseInt(f, 10) === target,
+  );
   return match ? path.join(careerOpsRoot(), "reports", match) : null;
 }
 
@@ -193,7 +223,10 @@ export function readReport(n: string): ReportData | null {
   const file = findReportFile(n);
   if (!file) return null;
   try {
-    return { content: fs.readFileSync(file, "utf8"), file: path.basename(file) };
+    return {
+      content: fs.readFileSync(file, "utf8"),
+      file: path.basename(file),
+    };
   } catch {
     return null;
   }
@@ -221,12 +254,18 @@ export function readMemory(): string {
     const md = fs.readFileSync(profilePath(), "utf8");
     const i = md.indexOf(NOTES_START);
     const j = md.indexOf(NOTES_END);
-    if (i !== -1 && j !== -1 && j > i) return md.slice(i + NOTES_START.length, j).trim();
+    if (i !== -1 && j !== -1 && j > i)
+      return md.slice(i + NOTES_START.length, j).trim();
   } catch {
     /* no _profile.md yet */
   }
   try {
-    return fs.readFileSync(path.join(careerOpsRoot(), ".career-ops-web", "memory.md"), "utf8").trim();
+    return fs
+      .readFileSync(
+        path.join(careerOpsRoot(), ".career-ops-web", "memory.md"),
+        "utf8",
+      )
+      .trim();
   } catch {
     return "";
   }
@@ -255,7 +294,9 @@ export function rememberFact(fact: string): "ok" | "deduped" | "error" {
     }
     if (md.includes(f)) return "deduped";
     const section = `\n\n## Notes from the web assistant\n${NOTES_START}\n- ${f}\n${NOTES_END}\n`;
-    const base = md.trim() ? md.replace(/\n*$/, "\n") : "# Profile customization\n";
+    const base = md.trim()
+      ? md.replace(/\n*$/, "\n")
+      : "# Profile customization\n";
     atomicWrite(p, base + section);
     return "ok";
   } catch {
