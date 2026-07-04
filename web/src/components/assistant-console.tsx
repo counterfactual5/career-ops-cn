@@ -5,14 +5,25 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Send, X, Loader2, Settings, RotateCcw, ArrowUpRight, Sparkles } from "lucide-react";
+import {
+  Send,
+  X,
+  Loader2,
+  Settings,
+  RotateCcw,
+  ArrowUpRight,
+  Sparkles,
+} from "lucide-react";
 import { CoMark } from "@/components/co-mark";
 import { useJobs } from "@/components/jobs/job-store";
 import { usePipeline } from "@/components/pipeline/pipeline-provider";
 import { useApply } from "@/components/apply/apply-provider";
-import { useExplore } from "@/components/explore/explore-provider";
 import { WorkerCard } from "@/components/jobs/worker-card";
-import { dispatch, type ActionCtx, type DoneInfo } from "@/app/actions/registry";
+import {
+  dispatch,
+  type ActionCtx,
+  type DoneInfo,
+} from "@/app/actions/registry";
 import { scoreNum } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -23,7 +34,12 @@ type Part =
   | { type: "note"; text: string }
   | { type: "card"; jobId: string }
   | { type: "batch"; batchId: string; jobIds: string[] }
-  | { type: "confirm"; cid: string; summary: string; state: "pending" | "done" | "cancelled" };
+  | {
+      type: "confirm";
+      cid: string;
+      summary: string;
+      state: "pending" | "done" | "cancelled";
+    };
 type Msg = { role: "user" | "assistant"; parts: Part[] };
 
 const CONFIG_KEY = "career-ops:config";
@@ -54,7 +70,10 @@ function normalizeJson(s: string): string {
     .trim();
 }
 type Env = { start: number; end: number; id: string; argsJson: string };
-function parseEnvelopes(acc: string): { complete: Env[]; hidePartialFrom: number } {
+function parseEnvelopes(acc: string): {
+  complete: Env[];
+  hidePartialFrom: number;
+} {
   const ranges = codeRanges(acc);
   const complete: Env[] = [];
   let hidePartialFrom = -1;
@@ -66,10 +85,16 @@ function parseEnvelopes(acc: string): { complete: Env[]; hidePartialFrom: number
     const argsStart = m.index + m[0].length;
     const close = acc.indexOf(">>", argsStart);
     if (close === -1) {
-      if (hidePartialFrom === -1 || start < hidePartialFrom) hidePartialFrom = start;
+      if (hidePartialFrom === -1 || start < hidePartialFrom)
+        hidePartialFrom = start;
       continue;
     }
-    complete.push({ start, end: close + 2, id: m[1], argsJson: acc.slice(argsStart, close).trim() });
+    complete.push({
+      start,
+      end: close + 2,
+      id: m[1],
+      argsJson: acc.slice(argsStart, close).trim(),
+    });
   }
   return { complete, hidePartialFrom };
 }
@@ -97,7 +122,8 @@ function describePage(p: string): string {
   if (p === "/analytics") return "分析 — 漏斗、评分分布、热门公司。";
   if (p === "/cv") return "简历编辑器 (cv.md)。";
   if (p === "/config") return "配置 — CLI/引擎设置。";
-  if (p === "/apply") return "申请 — 表单代理：用户正在审查以通俗语言重新渲染的求职申请，已从简历预填。你可以通过 setApplyField 编写/修改答案。";
+  if (p === "/apply")
+    return "申请 — 表单代理：用户正在审查以通俗语言重新渲染的求职申请，已从简历预填。你可以通过 setApplyField 编写/修改答案。";
   if (p.startsWith("/jobs/")) return "正在查看运行中的工作/评估进度。";
   return `路由 ${p}。`;
 }
@@ -108,21 +134,31 @@ function migrate(raw: unknown): Msg[] | null {
   return raw
     .map((m): Msg | null => {
       if (!m || typeof m !== "object") return null;
-      const role = (m as { role?: string }).role === "user" ? "user" : "assistant";
+      const role =
+        (m as { role?: string }).role === "user" ? "user" : "assistant";
       if (Array.isArray((m as { parts?: unknown }).parts)) {
         // keep only serializable parts (drop transient pending confirms)
-        const parts = ((m as { parts: Part[] }).parts).filter(
+        const parts = (m as { parts: Part[] }).parts.filter(
           (p) => p.type !== "confirm" || p.state !== "pending",
         );
         return { role, parts };
       }
       const content = (m as { content?: string }).content;
-      return { role, parts: [{ type: "text", text: typeof content === "string" ? content : "" }] };
+      return {
+        role,
+        parts: [
+          { type: "text", text: typeof content === "string" ? content : "" },
+        ],
+      };
     })
     .filter((x): x is Msg => !!x);
 }
 function msgText(m: Msg): string {
-  return m.parts.filter((p): p is Extract<Part, { type: "text" }> => p.type === "text").map((p) => p.text).join(" ").trim();
+  return m.parts
+    .filter((p): p is Extract<Part, { type: "text" }> => p.type === "text")
+    .map((p) => p.text)
+    .join(" ")
+    .trim();
 }
 
 export function AssistantConsole() {
@@ -146,9 +182,6 @@ export function AssistantConsole() {
   pipelineRef.current = pipeline;
   const applyRef = useRef(apply);
   applyRef.current = apply;
-  const explore = useExplore();
-  const exploreRef = useRef(explore);
-  exploreRef.current = explore;
   const handledRef = useRef<Set<string>>(new Set());
   const confirmRuns = useRef<Map<string, () => DoneInfo>>(new Map());
 
@@ -180,9 +213,12 @@ export function AssistantConsole() {
   useEffect(() => {
     if (!messages.length) return;
     try {
-      const serializable = messages
-        .slice(-30)
-        .map((m) => ({ role: m.role, parts: m.parts.filter((p) => p.type !== "confirm" || p.state !== "pending") }));
+      const serializable = messages.slice(-30).map((m) => ({
+        role: m.role,
+        parts: m.parts.filter(
+          (p) => p.type !== "confirm" || p.state !== "pending",
+        ),
+      }));
       localStorage.setItem(CHAT_KEY, JSON.stringify(serializable));
     } catch {
       /* ignore */
@@ -190,10 +226,16 @@ export function AssistantConsole() {
   }, [messages]);
 
   useEffect(() => {
-    if (open && messages.length === 0) setMessages([{ role: "assistant", parts: [{ type: "text", text: GREETING }] }]);
+    if (open && messages.length === 0)
+      setMessages([
+        { role: "assistant", parts: [{ type: "text", text: GREETING }] },
+      ]);
   }, [open, messages.length]);
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages]);
 
   // ── message mutators (operate on the last assistant message) ──
@@ -218,7 +260,12 @@ export function AssistantConsole() {
       }),
     );
   const appendParts = (newParts: Part[]) =>
-    setMessages((ms) => patchLastAssistant(ms, (m) => ({ ...m, parts: [...m.parts, ...newParts] })));
+    setMessages((ms) =>
+      patchLastAssistant(ms, (m) => ({
+        ...m,
+        parts: [...m.parts, ...newParts],
+      })),
+    );
 
   function appendCards(info: DoneInfo) {
     const ids = info.jobIds ?? [];
@@ -226,7 +273,8 @@ export function AssistantConsole() {
       if (info.note) appendParts([{ type: "note", text: info.note }]);
       return;
     }
-    if (info.batchId && ids.length > 1) appendParts([{ type: "batch", batchId: info.batchId, jobIds: ids }]);
+    if (info.batchId && ids.length > 1)
+      appendParts([{ type: "batch", batchId: info.batchId, jobIds: ids }]);
     else appendParts(ids.map((jobId) => ({ type: "card" as const, jobId })));
   }
 
@@ -238,7 +286,9 @@ export function AssistantConsole() {
       inbox: pipelineRef.current.inbox,
       applications: pipelineRef.current.applications,
       jobForUrl: (url) => {
-        const m = jobsRef.current.filter((j) => j.input === url).sort((a, b) => b.startedAt - a.startedAt);
+        const m = jobsRef.current
+          .filter((j) => j.input === url)
+          .sort((a, b) => b.startedAt - a.startedAt);
         return m[0];
       },
       rememberFact: (fact) => {
@@ -260,19 +310,20 @@ export function AssistantConsole() {
           })
           .catch(() => {});
       },
-      setApplyField: (idOrLabel, value) => applyRef.current.setAnswer(idOrLabel, value),
+      setApplyField: (idOrLabel, value) =>
+        applyRef.current.setAnswer(idOrLabel, value),
       startApply: (u) => {
         router.push("/apply");
         setTimeout(() => applyRef.current.open(u), 60);
       },
-      applyExplore: (patch, opts) => exploreRef.current.applyPatch(patch, opts),
       writeProfile: (patch) => {
-        fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) })
+        fetch("/api/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        })
           .then(() => router.refresh())
           .catch(() => {});
-      },
-      writePortals: (roles, location) => {
-        fetch("/api/portals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roles, location }) }).catch(() => {});
       },
     };
   }
@@ -285,7 +336,9 @@ export function AssistantConsole() {
     } else if (res.status === "confirm") {
       const cid = `c-${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
       confirmRuns.current.set(cid, res.run);
-      appendParts([{ type: "confirm", cid, summary: res.summary, state: "pending" }]);
+      appendParts([
+        { type: "confirm", cid, summary: res.summary, state: "pending" },
+      ]);
     }
   }
 
@@ -295,13 +348,24 @@ export function AssistantConsole() {
     const info = accept && run ? run() : null;
     setMessages((ms) =>
       ms.map((m) => {
-        if (!m.parts.some((p) => p.type === "confirm" && p.cid === cid)) return m;
+        if (!m.parts.some((p) => p.type === "confirm" && p.cid === cid))
+          return m;
         const parts: Part[] = m.parts.map((p) =>
-          p.type === "confirm" && p.cid === cid ? { ...p, state: accept ? "done" : "cancelled" } : p,
+          p.type === "confirm" && p.cid === cid
+            ? { ...p, state: accept ? "done" : "cancelled" }
+            : p,
         );
         if (info?.jobIds?.length) {
-          if (info.batchId && info.jobIds.length > 1) parts.push({ type: "batch", batchId: info.batchId, jobIds: info.jobIds });
-          else parts.push(...info.jobIds.map((jobId) => ({ type: "card" as const, jobId })));
+          if (info.batchId && info.jobIds.length > 1)
+            parts.push({
+              type: "batch",
+              batchId: info.batchId,
+              jobIds: info.jobIds,
+            });
+          else
+            parts.push(
+              ...info.jobIds.map((jobId) => ({ type: "card" as const, jobId })),
+            );
         }
         return { ...m, parts };
       }),
@@ -314,11 +378,14 @@ export function AssistantConsole() {
     const pending = pipelineRef.current.inbox.filter((j) => !j.done);
     if (!pending.length) return "";
     const counts = new Map<string, number>();
-    for (const j of pending) counts.set(j.company, (counts.get(j.company) ?? 0) + 1);
+    for (const j of pending)
+      counts.set(j.company, (counts.get(j.company) ?? 0) + 1);
     const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14);
     return `\n\nINBOX SNAPSHOT: ${pending.length} pending postings. By company: ${top
       .map(([c, n]) => `${c} (${n})`)
-      .join(", ")}. To evaluate every pending posting for one company, emit evaluateCompany with just the company name.`;
+      .join(
+        ", ",
+      )}. To evaluate every pending posting for one company, emit evaluateCompany with just the company name.`;
   }
 
   // When the user is on /apply, expose the proxy form's fields + current answers
@@ -327,7 +394,10 @@ export function AssistantConsole() {
     const ap = applyRef.current;
     if (!pathname.startsWith("/apply") || !ap.fields.length) return "";
     const lines = ap.fields
-      .map((f) => `- ${f.label || f.id}${ap.meta[f.id]?.needsConfirmation ? " (user confirms)" : ""}: ${ap.answers[f.id] ? `"${ap.answers[f.id].slice(0, 240)}"` : "(empty)"}`)
+      .map(
+        (f) =>
+          `- ${f.label || f.id}${ap.meta[f.id]?.needsConfirmation ? " (user confirms)" : ""}: ${ap.answers[f.id] ? `"${ap.answers[f.id].slice(0, 240)}"` : "(empty)"}`,
+      )
       .join("\n");
     return `\n\nAPPLY FORM — the user is filling "${ap.title}". Current answers:\n${lines}\nTo write or revise an answer, emit setApplyField {"field":"<label or id>","value":"<new text>"}. If a change reveals a durable preference or corrected fact, ALSO remember it.`;
   }
@@ -336,8 +406,14 @@ export function AssistantConsole() {
     const text = (forced ?? input).trim();
     if (!text || busy || !cliId) return;
     if (forced === undefined) setInput("");
-    const history = messages.filter((m) => msgText(m) && msgText(m) !== GREETING).map((m) => ({ role: m.role, content: msgText(m) }));
-    setMessages((m) => [...m, { role: "user", parts: [{ type: "text", text }] }, { role: "assistant", parts: [{ type: "text", text: "" }] }]);
+    const history = messages
+      .filter((m) => msgText(m) && msgText(m) !== GREETING)
+      .map((m) => ({ role: m.role, content: msgText(m) }));
+    setMessages((m) => [
+      ...m,
+      { role: "user", parts: [{ type: "text", text }] },
+      { role: "assistant", parts: [{ type: "text", text: "" }] },
+    ]);
     setBusy(true);
     handledRef.current = new Set();
     const shimsDone = new Set<string>();
@@ -345,7 +421,13 @@ export function AssistantConsole() {
       const res = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, cliId, history, pageContext: describePage(pathname) + pipelineContext() + applyContext() }),
+        body: JSON.stringify({
+          message: text,
+          cliId,
+          history,
+          pageContext:
+            describePage(pathname) + pipelineContext() + applyContext(),
+        }),
       });
       if (!res.ok || !res.body) {
         const err = await res.json().catch(() => ({}));
@@ -416,7 +498,9 @@ export function AssistantConsole() {
   }
 
   function resetChat() {
-    setMessages([{ role: "assistant", parts: [{ type: "text", text: GREETING }] }]);
+    setMessages([
+      { role: "assistant", parts: [{ type: "text", text: GREETING }] },
+    ]);
     confirmRuns.current.clear();
     try {
       localStorage.removeItem(CHAT_KEY);
@@ -444,28 +528,60 @@ export function AssistantConsole() {
     const chips: { label: string; send: string }[] = [];
     const rep = pathname.match(/^\/pipeline\/(.+)$/);
     if (rep) {
-      chips.push({ label: "为什么这个评分？", send: "帮我分析这个职位的评分依据 — 优势和风险点。" });
-      chips.push({ label: "应该投递吗？", send: "根据我的背景，我应该投递这个职位吗？说实话。" });
-      chips.push({ label: "写求职信", send: "为这个职位写一封简短有力的求职信。" });
+      chips.push({
+        label: "为什么这个评分？",
+        send: "帮我分析这个职位的评分依据 — 优势和风险点。",
+      });
+      chips.push({
+        label: "应该投递吗？",
+        send: "根据我的背景，我应该投递这个职位吗？说实话。",
+      });
+      chips.push({
+        label: "写求职信",
+        send: "为这个职位写一封简短有力的求职信。",
+      });
       return chips;
     }
     const pending = pipeline.inbox.filter((j) => !j.done);
     if (!pipeline.applications.length && !pending.length) {
       return [
-        { label: "帮我设置", send: "帮我开始使用 career-ops-cn — 你需要我提供什么？" },
-        { label: "优化我的简历", send: "看看我的简历，给出最有价值的改进建议。" },
+        {
+          label: "帮我设置",
+          send: "帮我开始使用 career-ops-cn — 你需要我提供什么？",
+        },
+        {
+          label: "优化我的简历",
+          send: "看看我的简历，给出最有价值的改进建议。",
+        },
       ];
     }
     if (pending.length) {
       const counts = new Map<string, number>();
-      for (const j of pending) counts.set(j.company, (counts.get(j.company) ?? 0) + 1);
+      for (const j of pending)
+        counts.set(j.company, (counts.get(j.company) ?? 0) + 1);
       const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-      if (top && top[1] > 1) chips.push({ label: `评估所有 ${top[0]} (${top[1]})`, send: `评估我收件箱中所有待处理的 ${top[0]} 职位。` });
-      chips.push({ label: `整理收件箱 (${pending.length})`, send: `我有 ${pending.length} 个职位在收件箱 — 哪些应该优先评估，为什么？` });
+      if (top && top[1] > 1)
+        chips.push({
+          label: `评估所有 ${top[0]} (${top[1]})`,
+          send: `评估我收件箱中所有待处理的 ${top[0]} 职位。`,
+        });
+      chips.push({
+        label: `整理收件箱 (${pending.length})`,
+        send: `我有 ${pending.length} 个职位在收件箱 — 哪些应该优先评估，为什么？`,
+      });
     }
-    const strong = pipeline.applications.filter((a) => scoreNum(a.score) >= 4.5).length;
-    if (strong) chips.push({ label: "强匹配待处理", send: "给我看我还没投递的强匹配（4.5+），告诉我应该优先哪些。" });
-    chips.push({ label: "今天该做什么？", send: "看看我的管线，告诉我今天最该做的 3 件事。" });
+    const strong = pipeline.applications.filter(
+      (a) => scoreNum(a.score) >= 4.5,
+    ).length;
+    if (strong)
+      chips.push({
+        label: "强匹配待处理",
+        send: "给我看我还没投递的强匹配（4.5+），告诉我应该优先哪些。",
+      });
+    chips.push({
+      label: "今天该做什么？",
+      send: "看看我的管线，告诉我今天最该做的 3 件事。",
+    });
     return chips.slice(0, 4);
   }, [pathname, pipeline.inbox, pipeline.applications]);
 
@@ -488,26 +604,51 @@ export function AssistantConsole() {
             <CoMark size={26} />
             <div className="flex-1">
               <div className="text-sm font-semibold tracking-tight">助手</div>
-              <div className="text-xs text-faint">{cliId ? `via ${cliId}` : "未配置 CLI"}</div>
+              <div className="text-xs text-faint">
+                {cliId ? `via ${cliId}` : "未配置 CLI"}
+              </div>
             </div>
-            <button onClick={resetChat} className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground" aria-label="新对话" title="新对话">
+            <button
+              onClick={resetChat}
+              className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+              aria-label="新对话"
+              title="新对话"
+            >
               <RotateCcw className="size-4" />
             </button>
-            <button onClick={() => setOpen(false)} className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground" aria-label="关闭助手">
+            <button
+              onClick={() => setOpen(false)}
+              className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+              aria-label="关闭助手"
+            >
               <X className="size-4" />
             </button>
           </header>
 
-          <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+          <div
+            ref={scrollRef}
+            className="flex-1 space-y-4 overflow-y-auto px-4 py-4"
+          >
             {messages.map((m, i) => {
-              const hasVisible = m.parts.some((p) => (p.type === "text" && p.text.trim()) || p.type !== "text");
+              const hasVisible = m.parts.some(
+                (p) =>
+                  (p.type === "text" && p.text.trim()) || p.type !== "text",
+              );
               const isLast = i === messages.length - 1;
               return (
-                <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+                <div
+                  key={i}
+                  className={cn(
+                    "flex",
+                    m.role === "user" ? "justify-end" : "justify-start",
+                  )}
+                >
                   <div
                     className={cn(
                       "max-w-[88%] rounded-2xl px-3.5 py-2 text-sm",
-                      m.role === "user" ? "bg-brand text-brand-foreground" : "w-full bg-surface-hover text-foreground",
+                      m.role === "user"
+                        ? "bg-brand text-brand-foreground"
+                        : "w-full bg-surface-hover text-foreground",
                     )}
                   >
                     {m.role === "user" ? (
@@ -517,7 +658,13 @@ export function AssistantConsole() {
                     ) : (
                       <div className="space-y-2">
                         {m.parts.map((p, j) => (
-                          <PartView key={j} part={p} jobs={jobs} onConfirm={resolveConfirm} onOpen={() => {}} />
+                          <PartView
+                            key={j}
+                            part={p}
+                            jobs={jobs}
+                            onConfirm={resolveConfirm}
+                            onOpen={() => {}}
+                          />
                         ))}
                       </div>
                     )}
@@ -575,7 +722,11 @@ export function AssistantConsole() {
                 className="rounded-xl bg-brand p-2 text-brand-foreground transition-colors hover:bg-brand-200 disabled:opacity-40"
                 aria-label="发送"
               >
-                {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                {busy ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
               </button>
             </div>
           </div>
@@ -611,7 +762,10 @@ function PartView({
     const job = jobs.find((j) => j.id === part.jobId);
     if (!job)
       return (
-        <Link href={`/jobs/${part.jobId}`} className="block rounded-xl border border-border bg-surface/40 p-2.5 text-xs text-faint hover:text-foreground">
+        <Link
+          href={`/jobs/${part.jobId}`}
+          className="block rounded-xl border border-border bg-surface/40 p-2.5 text-xs text-faint hover:text-foreground"
+        >
           工作已完成 — 打开日志 →
         </Link>
       );
@@ -620,7 +774,11 @@ function PartView({
         job={job}
         variant="inline"
         trailing={
-          <Link href={`/jobs/${job.id}`} className="text-faint transition-colors hover:text-brand" aria-label="打开工作">
+          <Link
+            href={`/jobs/${job.id}`}
+            className="text-faint transition-colors hover:text-brand"
+            aria-label="打开工作"
+          >
             <ArrowUpRight className="size-3.5" />
           </Link>
         }
@@ -628,7 +786,9 @@ function PartView({
     );
   }
   if (part.type === "batch") {
-    const children = part.jobIds.map((id) => jobs.find((j) => j.id === id)).filter(Boolean);
+    const children = part.jobIds
+      .map((id) => jobs.find((j) => j.id === id))
+      .filter(Boolean);
     const done = children.filter((j) => j!.status === "done").length;
     return (
       <div className="rounded-xl border border-border bg-surface/40 p-2.5">
@@ -646,7 +806,11 @@ function PartView({
               job={j!}
               variant="inline"
               trailing={
-                <Link href={`/jobs/${j!.id}`} className="text-faint transition-colors hover:text-brand" aria-label="打开工作">
+                <Link
+                  href={`/jobs/${j!.id}`}
+                  className="text-faint transition-colors hover:text-brand"
+                  aria-label="打开工作"
+                >
                   <ArrowUpRight className="size-3.5" />
                 </Link>
               }
@@ -659,7 +823,9 @@ function PartView({
   if (part.type === "confirm") {
     return (
       <div className="rounded-xl border border-brand/40 bg-brand-soft p-2.5">
-        <div className="text-xs font-medium text-foreground">{part.summary}</div>
+        <div className="text-xs font-medium text-foreground">
+          {part.summary}
+        </div>
         {part.state === "pending" ? (
           <div className="mt-2 flex gap-2">
             <button
@@ -676,7 +842,9 @@ function PartView({
             </button>
           </div>
         ) : (
-          <div className="mt-1 text-xs text-faint">{part.state === "done" ? "✓ 已开始" : "已取消"}</div>
+          <div className="mt-1 text-xs text-faint">
+            {part.state === "done" ? "✓ 已开始" : "已取消"}
+          </div>
         )}
       </div>
     );

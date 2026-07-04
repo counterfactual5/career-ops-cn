@@ -9,13 +9,21 @@ export function scrub(s: string): string {
   return (s || "")
     .replace(/\/Users\/[^/\s"']+/g, "~")
     .replace(/\/home\/[^/\s"']+/g, "~")
-    .replace(/(sk|key|token|secret|bearer|api[-_]?key)([-_=:\s"']+)[A-Za-z0-9._-]{8,}/gi, "$1$2[redacted]");
+    .replace(
+      /(sk|key|token|secret|bearer|api[-_]?key)([-_=:\s"']+)[A-Za-z0-9._-]{8,}/gi,
+      "$1$2[redacted]",
+    );
 }
 
 /** Structural fingerprint from /api/report/shape — shapes/counts, never contents. */
 export type Shape = {
   runtime?: { node?: string; platform?: string; arch?: string };
-  setup?: { phase?: string; missing?: string[]; hasCv?: boolean; hasData?: boolean };
+  setup?: {
+    phase?: string;
+    missing?: string[];
+    hasCv?: boolean;
+    hasData?: boolean;
+  };
   data?: {
     inbox?: { candidates?: number; parsed?: number };
     tracker?: { candidates?: number; parsed?: number };
@@ -23,7 +31,7 @@ export type Shape = {
     pdfs?: number;
     followupsFile?: boolean;
   };
-  capabilities?: { scanJson?: boolean; trackerDelete?: boolean };
+  capabilities?: { trackerDelete?: boolean };
 };
 
 export type Diag = {
@@ -37,8 +45,6 @@ export type Diag = {
   viewport: string;
   logs: string[];
   shape: Shape | null;
-  /** Whether the core follow-up cadence engine answered — false = engine degraded. */
-  followupsAvailable: boolean | null;
 };
 
 /** Gather a STRUCTURAL diagnostic snapshot. Deliberately excludes anything personal:
@@ -63,15 +69,10 @@ export async function collect(): Promise<Diag> {
   } catch {
     /* structural snapshot is best-effort */
   }
-  let followupsAvailable: boolean | null = null;
-  try {
-    followupsAvailable = Boolean((await (await fetch("/api/followups")).json()).available);
-  } catch {
-    /* best-effort */
-  }
   let cli = "";
   try {
-    cli = JSON.parse(localStorage.getItem("career-ops:config") || "{}").cliId || "";
+    cli =
+      JSON.parse(localStorage.getItem("career-ops:config") || "{}").cliId || "";
   } catch {
     /* none */
   }
@@ -86,7 +87,6 @@ export async function collect(): Promise<Diag> {
     viewport: `${window.innerWidth}×${window.innerHeight}`,
     logs: recentLogs().map(scrub),
     shape,
-    followupsAvailable,
   };
 }
 
@@ -99,15 +99,16 @@ export function issueBody(d: Diag, description: string): string {
         "## Data shape (counts only — no contents)",
         `- **Setup:** ${s.setup?.phase || "?"}${s.setup?.missing?.length ? ` · missing: ${s.setup.missing.join(", ")}` : ""}`,
         `- **Inbox:** ${fmt(s.data?.inbox?.parsed)}/${fmt(s.data?.inbox?.candidates)} rows parsed · **Tracker:** ${fmt(s.data?.tracker?.parsed)}/${fmt(s.data?.tracker?.candidates)} rows parsed`,
-        `- **Reports:** ${fmt(s.data?.reports)} · **PDFs:** ${fmt(s.data?.pdfs)} · **Follow-ups engine:** ${d.followupsAvailable === null ? "?" : d.followupsAvailable ? "ok" : "DEGRADED"}`,
-        `- **Core capabilities:** scan --json ${s.capabilities?.scanJson ? "yes" : "no"} · tracker delete ${s.capabilities?.trackerDelete ? "yes" : "no"}`,
+        `- **Reports:** ${fmt(s.data?.reports)} · **PDFs:** ${fmt(s.data?.pdfs)}`,
+        `- **Core capabilities:** tracker delete ${s.capabilities?.trackerDelete ? "yes" : "no"}`,
         `- **Server:** node ${s.runtime?.node || "?"} · ${s.runtime?.platform || "?"}/${s.runtime?.arch || "?"}`,
         "",
       ]
     : [];
   return [
     "## What happened",
-    scrub(description).trim() || "_(describe what you were doing and what went wrong)_",
+    scrub(description).trim() ||
+      "_(describe what you were doing and what went wrong)_",
     "",
     "## Environment",
     `- **Version:** \`${d.version || "?"}\`${d.coreVersion ? ` · core \`${d.coreVersion}\`` : ""} · ${d.channel}${d.sha ? ` · \`${d.sha}\`` : ""}`,
@@ -129,6 +130,10 @@ export function issueBody(d: Diag, description: string): string {
 
 export function issueUrl(d: Diag, description: string): string {
   const title = `[web ${d.channel}] ${(scrub(description) || "bug report").replace(/\s+/g, " ").trim().slice(0, 70)}`;
-  const params = new URLSearchParams({ title, body: issueBody(d, description), labels: "web-alpha,area:web" });
+  const params = new URLSearchParams({
+    title,
+    body: issueBody(d, description),
+    labels: "web-alpha,area:web",
+  });
   return `https://github.com/${REPO}/issues/new?${params.toString()}`;
 }

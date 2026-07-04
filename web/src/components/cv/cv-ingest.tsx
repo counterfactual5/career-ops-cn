@@ -5,17 +5,28 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Upload, FileText, Loader2, Check, AlertTriangle, Lock, ArrowRight, RotateCcw } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Loader2,
+  Check,
+  AlertTriangle,
+  Lock,
+  ArrowRight,
+  RotateCcw,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import { instrumentSerif } from "@/lib/fonts";
 import { cvReadiness, parseCvStream, type CvSeed } from "@/lib/cv/quality";
-import { DEFAULT_FILTERS, filtersToParams } from "@/lib/explore";
 
 type Phase = "input" | "parsing" | "review" | "saving" | "error";
 
 function cliId(): string | null {
   try {
-    return JSON.parse(localStorage.getItem("career-ops:config") || "{}").cliId || null;
+    return (
+      JSON.parse(localStorage.getItem("career-ops:config") || "{}").cliId ||
+      null
+    );
   } catch {
     return null;
   }
@@ -66,11 +77,19 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
         buf += dec.decode(value, { stream: true });
         const parsed = parseCvStream(buf);
         if (parsed.error) {
-          setErr(parsed.error === "unreadable" ? "无法从该文件读取文本（可能是扫描图片）。请粘贴文本。" : "无法解析简历 — 请粘贴文本。");
+          setErr(
+            parsed.error === "unreadable"
+              ? "无法从该文件读取文本（可能是扫描图片）。请粘贴文本。"
+              : "无法解析简历 — 请粘贴文本。",
+          );
           setPhase("error");
           return;
         }
-        if (parsed.trace) setTrace(parsed.trace.split("\n").filter(Boolean).slice(-1)[0] || "正在读取简历…");
+        if (parsed.trace)
+          setTrace(
+            parsed.trace.split("\n").filter(Boolean).slice(-1)[0] ||
+              "正在读取简历…",
+          );
         if (parsed.markdown) setMd(parsed.markdown);
         if (parsed.seed) setSeed(parsed.seed);
       }
@@ -96,7 +115,11 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
       setPhase("error");
       return;
     }
-    void runStream({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, cliId: id }) });
+    void runStream({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, cliId: id }),
+    });
   };
 
   const ingestFile = (file: File) => {
@@ -141,7 +164,11 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
     setSaveErr("");
     setPhase("saving");
     try {
-      const r = await fetch("/api/cv", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: md }) });
+      const r = await fetch("/api/cv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: md }),
+      });
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
         setSaveErr(d.error || "无法保存简历 — 请重试。");
@@ -154,15 +181,8 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
       return;
     }
     onSaved?.();
-    // WOW #1 — land in the Explorer with the CV-derived filters in the URL + run=1,
-    // so the Explorer auto-fires the FREE scan itself (robust, no push/replaceState race).
-    // GENEROUS first scan so it never comes back empty (that would kill the wow): roles
-    // only + a wide 30-day window; location stays a refinement for the deepen step, NOT a
-    // hard exclude (allow=[] passes everything). Recall over precision for the first reveal.
-    const roles = seed?.roles?.length ? seed.roles : seed?.title ? [seed.title] : [];
-    const f = { ...DEFAULT_FILTERS, ats: [...DEFAULT_FILTERS.ats], positive: roles, sinceDays: 30 };
-    const qs = filtersToParams(f);
-    router.push(`/explore?${qs}${qs ? "&" : ""}run=1`);
+    // 保存成功后跳到首页看板（不再自动启动扫描）
+    router.push("/");
   };
 
   // ── INPUT ──
@@ -189,7 +209,8 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
             value={paste}
             onChange={(e) => setPaste(e.target.value)}
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && paste.trim()) ingestText(paste.trim());
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && paste.trim())
+                ingestText(paste.trim());
             }}
             placeholder="在此粘贴简历 — 或在下方拖入 PDF/.md 文件。即使是粗糙的粘贴也行；我们会整理。"
             className="h-32 w-full resize-none bg-transparent text-[14px] leading-relaxed outline-none placeholder:text-faint"
@@ -202,9 +223,18 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
             >
               <Upload className="size-3.5" /> 上传 PDF/文件
             </button>
-            <input ref={fileRef} type="file" accept=".pdf,.md,.markdown,.txt,.docx" hidden onChange={(e) => e.target.files?.[0] && ingestFile(e.target.files[0])} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.md,.markdown,.txt,.docx"
+              hidden
+              onChange={(e) =>
+                e.target.files?.[0] && ingestFile(e.target.files[0])
+              }
+            />
             <span className="inline-flex items-center gap-1 text-[11px] text-faint">
-              <Lock className="size-3" /> 数据留在你的机器上。由你自己的 AI 解析。
+              <Lock className="size-3" /> 数据留在你的机器上。由你自己的 AI
+              解析。
             </span>
             <button
               type="button"
@@ -220,8 +250,14 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
           (err === "needs-cli" ? (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-[13px] text-amber-700 dark:text-amber-300">
               <AlertTriangle className="size-3.5 shrink-0" />
-              <span>要读取 PDF，请连接你的 AI CLI — 或在上方粘贴简历文本（无需设置）。</span>
-              <Link href="/config" className="ml-auto inline-flex items-center gap-1 rounded-md bg-amber-500/20 px-2.5 py-1 font-medium text-amber-700 transition hover:bg-amber-500/30 dark:text-amber-200">
+              <span>
+                要读取 PDF，请连接你的 AI CLI —
+                或在上方粘贴简历文本（无需设置）。
+              </span>
+              <Link
+                href="/config"
+                className="ml-auto inline-flex items-center gap-1 rounded-md bg-amber-500/20 px-2.5 py-1 font-medium text-amber-700 transition hover:bg-amber-500/30 dark:text-amber-200"
+              >
                 连接 AI CLI <ArrowRight className="size-3.5" />
               </Link>
             </div>
@@ -241,12 +277,21 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
         <style>{STYLE}</style>
         <div className="flex items-center gap-2.5">
           <Loader2 className="size-4 animate-spin text-brand" />
-          <span className={`${instrumentSerif.className} text-lg text-foreground`}>{trace || "正在读取简历…"}</span>
+          <span
+            className={`${instrumentSerif.className} text-lg text-foreground`}
+          >
+            {trace || "正在读取简历…"}
+          </span>
         </div>
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-          <span className="size-1.5 rounded-full bg-emerald-500" /> 0 tokens · ¥0 · 本地
+          <span className="size-1.5 rounded-full bg-emerald-500" /> 0 tokens ·
+          ¥0 · 本地
         </div>
-        {md && <div className="co-cvtrace mt-4 max-h-40 overflow-hidden rounded-lg border border-border bg-surface/40 p-3 text-[11px] text-faint">{md.slice(0, 400)}…</div>}
+        {md && (
+          <div className="co-cvtrace mt-4 max-h-40 overflow-hidden rounded-lg border border-border bg-surface/40 p-3 text-[11px] text-faint">
+            {md.slice(0, 400)}…
+          </div>
+        )}
       </div>
     );
   }
@@ -257,20 +302,32 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
       <style>{STYLE}</style>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <FileText className="size-4 text-brand" />
-        <h3 className={`${instrumentSerif.className} text-lg text-foreground`}>这是你的简历 — 检查并保存</h3>
+        <h3 className={`${instrumentSerif.className} text-lg text-foreground`}>
+          这是你的简历 — 检查并保存
+        </h3>
         {readiness && (
           <span
             className={cn(
               "ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-              readiness.scoreable ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+              readiness.scoreable
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
             )}
           >
-            {readiness.scoreable ? <Check className="size-3" /> : <AlertTriangle className="size-3" />}
+            {readiness.scoreable ? (
+              <Check className="size-3" />
+            ) : (
+              <AlertTriangle className="size-3" />
+            )}
             {readiness.scoreable ? "可匹配" : "略薄"}
           </span>
         )}
       </div>
-      {readiness?.hint && <p className="mb-2 text-[12px] text-amber-600 dark:text-amber-400">{readiness.hint}</p>}
+      {readiness?.hint && (
+        <p className="mb-2 text-[12px] text-amber-600 dark:text-amber-400">
+          {readiness.hint}
+        </p>
+      )}
       {saveErr && (
         <p className="mb-2 flex items-center gap-1.5 text-[12px] text-red-500">
           <AlertTriangle className="size-3.5 shrink-0" /> {saveErr}
@@ -293,7 +350,11 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
           disabled={phase === "saving"}
           className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60"
         >
-          {phase === "saving" ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+          {phase === "saving" ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Check className="size-4" />
+          )}
           保存并找到我的匹配
         </button>
         <button
