@@ -27,10 +27,10 @@
 import { readFileSync, existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { resolveColumns, parseTrackerRow } from "./tracker-parse.mjs";
-import { roleFuzzyMatch } from "./role-matcher.mjs";
+import { resolveColumns, parseTrackerRow } from "../tracker/tracker-parse.mjs";
+import { roleFuzzyMatch } from "../utils/role-matcher.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // "008" and "8" are the same report — zero-padded report-link form vs unpadded
 // tracker-# form (same normalization as the manifest writer in generate-pdf.mjs).

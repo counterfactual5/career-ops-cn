@@ -18,7 +18,7 @@ import { dirname, resolve, basename, join } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { parseArgs } from "util";
 
-const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUTPUT_ROOT = resolve(PROJECT_ROOT, "output");
 
 function safeOutputPath(raw) {
@@ -126,6 +126,7 @@ export function buildHtml(payload) {
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const templatePath = resolve(
     scriptDir,
+    "..",
     "..",
     "templates",
     "cover-letter-template.html",

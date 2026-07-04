@@ -19,10 +19,10 @@
  */
 
 import { readFileSync, existsSync, statSync } from "fs";
-import { basename, resolve, dirname } from "path";
+import { basename, resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const ALLOWED_HOSTS = new Set([
   "boards.greenhouse.io",

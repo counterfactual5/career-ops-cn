@@ -5,7 +5,7 @@ import { existsSync } from "fs";
 import { resolve, dirname, basename, join } from "path";
 import { fileURLToPath } from "url";
 
-const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..");
+const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const TEMPLATE_PATH = resolve(__dirname, "templates", "cv-template.tex");
 const PLACEHOLDER_RE = /\{\{[A-Z_]+\}\}/g;
 

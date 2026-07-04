@@ -16,14 +16,14 @@
  */
 
 import { chromium } from "playwright";
-import { resolve, dirname, relative, sep, isAbsolute } from "path";
+import { resolve, dirname, join, relative, sep, isAbsolute } from "path";
 import { readFile } from "fs/promises";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { fileURLToPath, pathToFileURL } from "url";
 import { randomUUID } from "node:crypto";
 
 // 脚本位于 scripts/ 下，项目根是上一级目录
-const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..");
+const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Ensure output directory exists (fresh setup)
 mkdirSync(resolve(__dirname, "output"), { recursive: true });

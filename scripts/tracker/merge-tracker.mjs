@@ -39,11 +39,11 @@ import { execFileSync } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { normalizeReportLink as normalizeLink } from "./tracker-links.mjs";
-import { roleFuzzyMatch } from "./role-matcher.mjs";
+import { roleFuzzyMatch } from "../utils/role-matcher.mjs";
 import { LEGACY_COLMAP, detectColumns } from "./tracker-parse.mjs";
 
 // 脚本位于 scripts/ 下，项目根是上一级目录
-const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..");
+const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original).
 // CAREER_OPS_TRACKER overrides the path (used by tests and non-standard layouts).
 const APPS_FILE_RAW = process.env.CAREER_OPS_TRACKER
@@ -935,9 +935,13 @@ trackerLock.release();
 if (VERIFY && !DRY_RUN) {
   console.log("\n--- 正在运行验证 ---");
   try {
-    execFileSync("node", [join(CAREER_OPS, "scripts", "verify-pipeline.mjs")], {
-      stdio: "inherit",
-    });
+    execFileSync(
+      "node",
+      [join(CAREER_OPS, "scripts", "tracker", "verify-pipeline.mjs")],
+      {
+        stdio: "inherit",
+      },
+    );
   } catch (e) {
     process.exit(1);
   }

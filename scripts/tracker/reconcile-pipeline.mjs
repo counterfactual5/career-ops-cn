@@ -34,7 +34,7 @@ import { join, dirname, resolve, relative, isAbsolute } from "path";
 import { fileURLToPath } from "url";
 import { normalizeReportLink } from "./tracker-links.mjs";
 
-const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..");
+const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DRY_RUN = process.argv.includes("--dry-run");
 
 if (process.argv.includes("-h") || process.argv.includes("--help")) {

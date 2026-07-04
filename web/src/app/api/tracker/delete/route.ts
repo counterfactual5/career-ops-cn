@@ -17,9 +17,9 @@ export const dynamic = "force-dynamic";
 let deleting = false;
 
 function parseOrphan(stderr: string): string | null {
-  // dry-run: "(report file would be orphaned: <path>)"
-  // real:    "Note: report file may now be orphaned — <path>"
-  const m = stderr.match(/orphaned[:—-]+\s*([^\n)]+)\)?\s*$/im);
+  // dry-run: "（报告文件可能成为孤儿文件 — <path>）"
+  // real:    "注意：报告文件可能已成为孤儿文件 — <path>"
+  const m = stderr.match(/孤儿文件[—\-]+\s*([^\n)]+)\)?\s*$/im);
   return m ? m[1].trim() : null;
 }
 
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
   }
   if (!dryRun) deleting = true;
 
-  const args = [rootScript("tracker"), "delete", "--num", num];
+  const args = [rootScript("tracker/tracker"), "delete", "--num", num];
   if (dryRun) args.push("--dry-run");
 
   try {
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     });
 
     if (result.code !== 0) {
-      const notFound = /No application numbered/i.test(result.err);
+      const notFound = /没有编号为|No application numbered/i.test(result.err);
       return Response.json(
         { error: result.err.trim().split("\n")[0] || "delete failed" },
         { status: notFound ? 404 : 400 },

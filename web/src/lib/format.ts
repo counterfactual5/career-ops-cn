@@ -3,7 +3,7 @@
 // core: normalize-statuses.mjs (aliases) + the Go TUI dashboard (score/status
 // colours = the current state-of-the-art).
 
-// Spanish + legacy aliases → canonical English tokens (normalize-statuses.mjs).
+// Spanish + legacy + Chinese aliases → canonical English tokens.
 const STATUS_ALIAS: Record<string, string> = {
   evaluada: "EVALUATED",
   evaluado: "EVALUATED",
@@ -11,26 +11,42 @@ const STATUS_ALIAS: Record<string, string> = {
   hold: "EVALUATED",
   evaluar: "EVALUATED",
   verificar: "EVALUATED",
+  已评估: "EVALUATED",
   aplicada: "APPLIED",
   aplicado: "APPLIED",
   enviada: "APPLIED",
   sent: "APPLIED",
+  已投递: "APPLIED",
+  已提交: "APPLIED",
   respondida: "RESPONDED",
   respondido: "RESPONDED",
   contestada: "RESPONDED",
+  已回复: "RESPONDED",
   entrevista: "INTERVIEW",
+  面试中: "INTERVIEW",
+  面试: "INTERVIEW",
   oferta: "OFFER",
+  已录用: "OFFER",
+  录用: "OFFER",
   rechazada: "REJECTED",
   rechazado: "REJECTED",
+  已拒绝: "REJECTED",
+  拒绝: "REJECTED",
   descartada: "DISCARDED",
   descartado: "DISCARDED",
   cerrada: "DISCARDED",
   cancelada: "DISCARDED",
   duplicado: "DISCARDED",
   repost: "DISCARDED",
+  已放弃: "DISCARDED",
+  放弃: "DISCARDED",
+  已关闭: "DISCARDED",
   monitor: "SKIP",
   no_aplicar: "SKIP",
   "no aplicar": "SKIP",
+  跳过: "SKIP",
+  不投递: "SKIP",
+  监控: "SKIP",
 };
 
 export const CANONICAL_STATES = [
@@ -88,9 +104,9 @@ export function scoreTone(score: string): "good" | "warn" | "bad" | "muted" {
 /** Block-G legitimacy tier → tone. */
 export function legitimacyTone(l: string): "good" | "warn" | "bad" | "muted" {
   const s = l.toLowerCase();
-  if (s.includes("high") || s.includes("confian") || s.includes("legit")) return "good";
-  if (s.includes("caution") || s.includes("precau") || s.includes("caut")) return "warn";
-  if (s.includes("suspic") || s.includes("sospech") || s.includes("scam") || s.includes("fake")) return "bad";
+  if (s.includes("high") || s.includes("confian") || s.includes("legit") || s.includes("高") && s.includes("可信")) return "good";
+  if (s.includes("caution") || s.includes("precau") || s.includes("caut") || s.includes("谨慎") || s.includes("注意")) return "warn";
+  if (s.includes("suspic") || s.includes("sospech") || s.includes("scam") || s.includes("fake") || s.includes("可疑") || s.includes("骗局") || s.includes("虚假")) return "bad";
   return "muted";
 }
 
@@ -104,12 +120,16 @@ export type ReportMeta = {
 const FIELD_KEYS: Record<string, string> = {
   date: "Date",
   fecha: "Date",
+  日期: "Date",
   url: "URL",
   archetype: "Archetype",
   arquetipo: "Archetype",
+  原型: "Archetype",
   score: "Score",
+  评分: "Score",
   legitimacy: "Legitimacy",
   legitimidad: "Legitimacy",
+  合法性: "Legitimacy",
   pdf: "PDF",
 };
 
@@ -137,7 +157,7 @@ export function parseReport(md: string): ReportMeta {
   for (const l of headerLines) {
     const h = l.match(/^#\s+(.+)/);
     if (h) {
-      title = h[1].replace(/^Evaluat?i[oó]n:?\s*/i, "").trim();
+      title = h[1].replace(/^Evaluat?i[oó]n:?\s*/i, "").replace(/^评估[：:]?\s*/i, "").trim();
       continue;
     }
     const m = l.match(/^\s*\*\*(.+?):\*\*\s*(.*)$/);

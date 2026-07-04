@@ -47,7 +47,7 @@ import {
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..");
+const __dirname = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const REPORTS_DIR = join(__dirname, "reports");
 
 // Sentinels older than this are considered stale and may be GC'd.

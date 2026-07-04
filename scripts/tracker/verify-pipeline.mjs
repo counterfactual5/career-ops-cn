@@ -28,7 +28,7 @@ import {
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..");
+const CAREER_OPS = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original).
 // CAREER_OPS_TRACKER overrides the path (used by tests and non-standard layouts).
 const APPS_FILE = process.env.CAREER_OPS_TRACKER

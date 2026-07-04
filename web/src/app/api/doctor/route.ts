@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // prerequisite list; we read the core's verdict.
 export async function GET() {
   const root = careerOpsRoot();
-  const doctor = rootScript("doctor");
+  const doctor = rootScript("diagnosis/doctor");
   if (!fs.existsSync(doctor)) {
     return Response.json({ available: false, onboardingNeeded: false, missing: [], warnings: [] });
   }

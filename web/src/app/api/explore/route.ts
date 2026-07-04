@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const filters = parseExplorePatch(body, DEFAULT_FILTERS);
 
   // Guard: a data-only checkout (or pre-onboarding) has no scanner. Fail soft.
-  if (!fs.existsSync(rootScript("scan-ats-full"))) {
+  if (!fs.existsSync(rootScript("diagnosis/scan-ats-full"))) {
     return Response.json(
       { error: "The discovery scanner isn't available in this checkout yet." },
       { status: 400 },

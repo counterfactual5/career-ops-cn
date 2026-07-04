@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // followup-cadence.mjs --json (the SAME calculator the CLI uses) — we never
 // reimplement the cadence logic, we read its verdict (mirrors /api/doctor).
 export async function GET() {
-  const script = rootScript("followup-cadence");
+  const script = rootScript("diagnosis/followup-cadence");
   if (!fs.existsSync(script)) return Response.json({ available: false, metadata: null, entries: [] });
   const stdout = await new Promise<string>((resolve) => {
     execFile("node", [script, "--json"], { cwd: careerOpsRoot(), timeout: 12_000 }, (_e, out) => resolve(out || ""));

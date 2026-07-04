@@ -50,7 +50,7 @@ import { pathToFileURL, fileURLToPath } from "url";
 import yaml from "js-yaml";
 
 // 脚本位于 scripts/ 下，项目根是上一级目录
-const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const MD_PATH =
   process.env.CAREER_OPS_TRACKER ||
