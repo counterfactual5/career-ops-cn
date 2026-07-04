@@ -37,9 +37,8 @@
 
 ```
 career-ops-cn/
-├── skills/           # 🤖 各 AI 平台专用入口
-│   └── career-ops-cn/ #   OpenClaw skill（微信/QQ/飞书等 IM 渠道）
-│       └── SKILL.md
+├── SKILL.md          # 🤖 OpenClaw 专用入口（IM 渠道）
+├── AGENTS.md         # 📝 Claude Code / Codex 等通用入口
 ├── modes/            # 🧠 AI 评估 prompt 体系（中文）
 │   ├── _shared.md    #   共享规则、评分系统、中国市场说明
 │   ├── oferta.md     #   A-G 完整评估流程
