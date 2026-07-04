@@ -182,6 +182,7 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
     }
     onSaved?.();
     // 保存成功后跳到首页看板（不再自动启动扫描）
+    router.refresh();
     router.push("/");
   };
 
