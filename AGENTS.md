@@ -37,18 +37,26 @@
 
 ```
 career-ops-cn/
-├── modes/            # AI 评估 prompt 体系（中文）
-│   ├── _shared.md    # 共享规则、评分系统、中国市场说明
-│   ├── oferta.md     # A-G 完整评估流程
-│   ├── apply.md      # 申请表单助手
-│   └── pipeline.md   # 批量处理流程
-├── web/              # Next.js 前端（本地可视化）
-├── scripts/          # 核心工具脚本
-├── config/           # 个人配置
-├── templates/        # 简历 PDF 模板
-├── fonts/            # PDF 字体
-├── data/             # 追踪数据
-└── reports/          # 评估报告存档
+├── skills/           # 🤖 各 AI 平台专用入口
+│   └── career-ops-cn/ #   OpenClaw skill（微信/QQ/飞书等 IM 渠道）
+│       └── SKILL.md
+├── modes/            # 🧠 AI 评估 prompt 体系（中文）
+│   ├── _shared.md    #   共享规则、评分系统、中国市场说明
+│   ├── oferta.md     #   A-G 完整评估流程
+│   ├── apply.md      #   申请表单助手
+│   └── pipeline.md   #   批量处理流程
+├── web/              # 🌐 Next.js 前端（本地可视化）
+├── scripts/          # 🛠️ 核心工具脚本（按功能分类）
+│   ├── cv/           #   简历 PDF/LaTeX 生成
+│   ├── tracker/      #   投递追踪管理
+│   ├── reports/      #   报告编号与归档
+│   ├── diagnosis/    #   诊断与健康检查
+│   └── utils/        #   业务工具
+├── config/           # ⚙️ 个人配置
+├── templates/        # 📄 简历 PDF 模板
+├── fonts/            # 🔤 PDF 字体
+├── data/             # 📊 追踪数据
+└── reports/          # 📋 评估报告存档
 ```
 
 ### 重点说明
