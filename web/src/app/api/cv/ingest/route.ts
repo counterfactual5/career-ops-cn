@@ -15,11 +15,13 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 // Prefer the CANONICAL core mode (single source of truth — CLI + web parse CVs
-// identically); fall back to the inline prompt until modes/cv-ingest.md lands
-// (exactly how the explore route handles a missing discover.md).
+// identically); fall back to the inline prompt until modes/cv-ingest.md lands.
 function readCanonicalMode(): string | null {
   try {
-    return fs.readFileSync(path.join(careerOpsRoot(), "modes", "cv-ingest.md"), "utf8");
+    return fs.readFileSync(
+      path.join(careerOpsRoot(), "modes", "cv-ingest.md"),
+      "utf8",
+    );
   } catch {
     return null;
   }
@@ -54,8 +56,10 @@ OUTPUT PROTOCOL:
 ${source}`;
 }
 
-const TEXT_SRC = (t: string) => `SOURCE (the user's CV, pasted as text — convert it):\n"""\n${t.slice(0, 24000)}\n"""`;
-const FILE_SRC = (p: string) => `SOURCE: the user's CV is the file at this local path — READ it with your file/Read tool, then convert it:\n${p}`;
+const TEXT_SRC = (t: string) =>
+  `SOURCE (the user's CV, pasted as text — convert it):\n"""\n${t.slice(0, 24000)}\n"""`;
+const FILE_SRC = (p: string) =>
+  `SOURCE: the user's CV is the file at this local path — READ it with your file/Read tool, then convert it:\n${p}`;
 
 export async function POST(req: Request) {
   const ctype = req.headers.get("content-type") || "";
@@ -68,25 +72,39 @@ export async function POST(req: Request) {
       const body = (await req.json()) as { text?: string; cliId?: string };
       cliId = body.cliId || "";
       const text = (body.text || "").trim();
-      if (!text) return Response.json({ error: "empty cv text" }, { status: 400 });
+      if (!text)
+        return Response.json({ error: "empty cv text" }, { status: 400 });
       promptSource = TEXT_SRC(text);
     } else if (ctype.includes("multipart/form-data")) {
       const form = await req.formData();
       cliId = String(form.get("cliId") || "");
       const file = form.get("file");
-      if (!(file instanceof File)) return Response.json({ error: "no file" }, { status: 400 });
+      if (!(file instanceof File))
+        return Response.json({ error: "no file" }, { status: 400 });
       // Reading a PDF/DOCX from a path needs the CLI's file tool, which only Claude
       // is granted here. Tell non-Claude users plainly instead of failing opaquely.
       if (cliId !== "claude" && /\.(pdf|docx)$/i.test(file.name)) {
-        return Response.json({ error: "PDF upload needs Claude Code — paste your CV text instead." }, { status: 400 });
+        return Response.json(
+          {
+            error: "PDF upload needs Claude Code — paste your CV text instead.",
+          },
+          { status: 400 },
+        );
       }
-      const ext = (file.name.match(/\.[a-z0-9]+$/i)?.[0] || ".pdf").toLowerCase();
+      const ext = (
+        file.name.match(/\.[a-z0-9]+$/i)?.[0] || ".pdf"
+      ).toLowerCase();
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "career-ops-cv-"));
       tempFile = path.join(dir, `cv${ext}`); // outside the repo, basename-only
-      fs.writeFileSync(tempFile, Buffer.from(await file.arrayBuffer()), { mode: 0o600 }); // PII → owner-only
+      fs.writeFileSync(tempFile, Buffer.from(await file.arrayBuffer()), {
+        mode: 0o600,
+      }); // PII → owner-only
       promptSource = FILE_SRC(tempFile);
     } else {
-      return Response.json({ error: "unsupported content-type" }, { status: 400 });
+      return Response.json(
+        { error: "unsupported content-type" },
+        { status: 400 },
+      );
     }
   } catch {
     return Response.json({ error: "bad request" }, { status: 400 });
@@ -95,7 +113,10 @@ export async function POST(req: Request) {
   const resolved = resolveCli(cliId);
   if (!resolved) {
     if (tempFile) cleanupTemp(tempFile);
-    return Response.json({ error: `CLI '${cliId}' not found on this machine` }, { status: 404 });
+    return Response.json(
+      { error: `CLI '${cliId}' not found on this machine` },
+      { status: 404 },
+    );
   }
   const { spec, binPath } = resolved;
   const prompt = ingestPrompt(promptSource);
@@ -122,7 +143,10 @@ export async function POST(req: Request) {
     child = spawn(binPath, args, { cwd: careerOpsRoot(), env: process.env });
   } catch (e) {
     if (tempFile) cleanupTemp(tempFile); // never leak the CV temp if spawn throws sync
-    return Response.json({ error: e instanceof Error ? e.message : "failed to start the CLI" }, { status: 500 });
+    return Response.json(
+      { error: e instanceof Error ? e.message : "failed to start the CLI" },
+      { status: 500 },
+    );
   }
 
   const encoder = new TextEncoder();
@@ -186,7 +210,10 @@ export async function POST(req: Request) {
           if (!line) continue;
           try {
             const obj = JSON.parse(line);
-            if (obj.type === "stream_event" && obj.event?.type === "content_block_delta") {
+            if (
+              obj.type === "stream_event" &&
+              obj.event?.type === "content_block_delta"
+            ) {
               const text = obj.event.delta?.text;
               if (typeof text === "string") emit(text);
             }
@@ -197,14 +224,15 @@ export async function POST(req: Request) {
       });
       child.stderr.on("data", (d: Buffer) => {
         const s = d.toString();
-        if (/error|not found|denied|fatal/i.test(s)) safeEnqueue(`\n[${spec.name}] ${s.trim()}\n`);
+        if (/error|not found|denied|fatal/i.test(s))
+          safeEnqueue(`\n[${spec.name}] ${s.trim()}\n`);
       });
       child.on("error", (e) => {
         safeEnqueue(`\n[error launching ${spec.name}: ${e.message}]`);
         safeClose();
       });
       child.on("close", () => {
-        if (!emitted) safeEnqueue("<<cv:error>>{\"reason\":\"no-output\"}");
+        if (!emitted) safeEnqueue('<<cv:error>>{"reason":"no-output"}');
         safeClose();
       });
     },
@@ -221,7 +249,11 @@ export async function POST(req: Request) {
   });
 
   return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" },
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
   });
 }
 

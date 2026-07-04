@@ -59,7 +59,7 @@ export async function GET() {
     },
     setup: {
       phase: doctor.phase,
-      missing: doctor.missing, // system prereq FILENAMES only (cv.md, portals.yml…)
+      missing: doctor.missing, // system prereq FILENAMES only (cv.md, profile.yml…)
       hasCv: doctor.hasCv,
       hasData: doctor.hasData,
     },

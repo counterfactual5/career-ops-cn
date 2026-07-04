@@ -45,15 +45,6 @@ Do not submit anything anywhere.
 
 End with EXACTLY one final line: VERDICT: {5 if the PDF was written, else 1}/5 — {the output/ path, ≤12 words}`;
   }
-  if (kind === "fix-portal") {
-    return `A company's job-portal ATS slug is BROKEN — career-ops can no longer scan it, so it silently disappears from every future scan. Repair it (headless, on the user's machine):
-1. Run \`node scripts/verify-portals.mjs --add "${input}"\` — it probes Greenhouse/Ashby/Lever for the company's correct ATS slug and prints the suggested ats + slug.
-2. Open portals.yml, find the "${input}" entry under tracked_companies, and update its careers_url (and any api/slug field) to the suggested WORKING ATS URL. Change ONLY this one company; preserve all other YAML structure, comments and formatting exactly.
-3. Re-run \`node scripts/verify-portals.mjs\` and confirm "${input}" now shows ✅ live (not ❌).
-If NO slug variant resolves, say so clearly and leave portals.yml unchanged. Never touch any other company.
-
-End with EXACTLY one final line: VERDICT: {5 if now live, else 1}/5 — {what you changed, ≤12 words}`;
-  }
   // evaluate (default) — run the REAL oferta mode + persist canonically
   return `You are running the OFFICIAL career-ops job evaluation, HEADLESS, on the user's own machine. Today is ${today}. Run the REAL career-ops evaluation — do NOT improvise your own scoring.
 
@@ -100,7 +91,6 @@ export async function POST(req: Request) {
   // root is incomplete instead of faking it.
   const needsScript: Record<string, string> = {
     evaluate: "modes/oferta.md",
-    "fix-portal": "scripts/verify-portals.mjs",
     pdf: "scripts/cv/generate-pdf.mjs",
   };
   const required = needsScript[kind];
@@ -138,7 +128,7 @@ export async function POST(req: Request) {
   // report). 'research' stays read-only. Task (sub-agents) is always blocked
   // (runaway cost). NEVER auto-submits — that is a prompt-level guarantee.
   const tools =
-    kind === "evaluate" || kind === "fix-portal" || kind === "pdf"
+    kind === "evaluate" || kind === "pdf"
       ? {
           allowed: "Read,WebFetch,WebSearch,Write,Edit,Bash,Glob,Grep",
           disallowed: "Task,NotebookEdit",
